@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using UnityEditor;
 
 namespace UnityEngine.Reflection
@@ -10,6 +6,15 @@ namespace UnityEngine.Reflection
 	[CustomPropertyDrawer(typeof(UnityMethod))]
 	public class UnityMethodDrawer : UnityMemberDrawer
 	{
+		protected override ReflectionAttribute DefaultReflectionAttribute()
+		{
+			ReflectionAttribute reflection = base.DefaultReflectionAttribute();
+
+			// Override defaults here
+
+			return reflection;
+		}
+
 		protected override string memberLabel
 		{
 			get

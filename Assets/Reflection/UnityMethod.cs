@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 namespace UnityEngine.Reflection
 {
@@ -40,6 +39,11 @@ namespace UnityEngine.Reflection
 			EnsureReflected();
 
 			return method.Invoke(realTarget, parameters);
+		}
+
+		public T Invoke<T>(params object[] parameters)
+		{
+			return (T)Invoke(parameters);
 		}
 
 		public Type returnType

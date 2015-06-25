@@ -11,10 +11,9 @@ namespace UnityEngine.Reflection
 		Reference = 2,
 		Primitive = 4,
 		Array = 8,
-		Struct = 16,
-		Class = 32,
-		Enum = 64,
-		Interface = 128,
+		Class = 16,
+		Enum = 32,
+		Interface = 64,
 	}
 
 	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]

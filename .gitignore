@@ -2,11 +2,12 @@ Library/
 Temp/
 Obj/
 Build/
-
-Assets/Test/
-Assets/UnityVS/
-Assets/uIntelliSense/
 ProjectSettings/
+
+Assets/*
+!Assets/Reflection/
+!Assets/Reflection/*
+!Assets/Reflection/**/*
 
 *.csproj
 *.unityproj

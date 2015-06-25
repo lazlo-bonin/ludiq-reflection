@@ -5,6 +5,7 @@ Build/
 ProjectSettings/
 
 Assets/*
+!Assets/Reflection.meta
 !Assets/Reflection/
 !Assets/Reflection/*
 !Assets/Reflection/**/*

@@ -83,11 +83,28 @@ Assigns a new value to the variable.
 object UnityMethod.Invoke(params object[] args)
 ```
 
-Invokes the method with any number of arguments of any type and returns its return value, or null if there isn't (void).
+Invokes the method with any number of arguments of any type and returns its return value, or null if there isn't any (void).
 
 ## Advanced Usage
 
-You can specify which members will appear in the inspector using the `Reflection` attribute. You can combine a number of attributes to display only the members you want. For example:
+### Self-Targeting
+
+You can tell the inspector to look on the current object instead of manually specifying one by adding the `[SelfTargeted]` attribute. For example:
+
+```csharp
+using UnityEngine;
+using UnityEngine.Reflection;
+
+public class AdvancedExample : MonoBehaviour
+{
+	[SelfTargeted]
+	public UnityVariable selfVariable;
+}
+```
+
+### Member Filtering
+
+You can specify which members will appear in the inspector using the `Reflection` attribute. You can combine a number of options to display only the members you want. For example:
 
 ```csharp
 using UnityEngine;

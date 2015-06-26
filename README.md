@@ -230,7 +230,7 @@ namespace UnityEngine.Reflection
 			// Override defaults here
             filter.NonPublic = true;
 
-			return reflection;
+			return filter;
 		}
 
         ...

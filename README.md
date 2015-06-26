@@ -145,7 +145,7 @@ public class AdvancedExample : MonoBehaviour
     public UnityMethod numericMethod;
 
     // Only show methods that return primitives or enums
-    [Filter(TypeFamilies = TypeFamily.Primitive | TypeFamily.Enum)]
+    [Filter(TypeFamily = TypeFamily.Primitive | TypeFamily.Enum)]
     public UnityMethod primitiveOrEnumMethod;
 
 	// Only show static methods
@@ -181,11 +181,11 @@ Public		|Display public members|true
 NonPublic	|Display private and protected members|false
 ReadOnly	|Display read-only properties and fields|true
 WriteOnly	|Display write-only properties and fields|true
-TypeFamilies|Determines which member type families are displayed|TypeFamily.All
+TypeFamily|Determines which member type families are displayed|TypeFamily.All
 Types		|Determines which member types are displayed|*(Any)*
 
 
-The `TypeFamilies` enumeration is a [bitwise flag set](http://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) with the following options:
+The `TypeFamily` enumeration is a [bitwise flag set](http://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) with the following options:
 
 Flag		|Description
 ------------|-----------

@@ -10,7 +10,11 @@ With them, you can easily refer to members of `Unity.Object` classes directly in
 
 Ugh. Here's a picture:
 
-![Explanation](http://i.imgur.com/Tltom7f.png)
+![Steps](http://i.imgur.com/Tltom7f.png)
+
+And another:
+
+![Inspector](http://i.imgur.com/DANkdON.png)
 
 ### Features
 
@@ -208,7 +212,7 @@ You can override the defaults by editing the inspector drawer classes and modify
 - For variables: `Reflection/Editor/UnityVariableDrawer.cs`
 - For methods: `Reflection/Editor/UnityMethodDrawer.cs`
 
-For example, if you wanted to make non-public variables show up by default (without having to specify it with a `Reflection` attribute), you could add the following line:
+For example, if you wanted to make non-public variables show up by default (without having to specify it with a `Filter` attribute), you could add the following line:
 
 ```csharp
 using System.Reflection;

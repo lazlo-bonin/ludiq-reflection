@@ -9,8 +9,12 @@ namespace UnityEngine.Reflection
 {
 	public static class Extensions
 	{
+		// Used to print pretty type names for primities
 		private static CSharpCodeProvider csharp = new CSharpCodeProvider();
 
+		/// <summary>
+		/// Returns the name for the given type where primitives are in their shortcut form.
+		/// </summary>
 		public static string PrettyName(this Type type)
 		{
 			string cSharpOutput = csharp.GetTypeOutput(new CodeTypeReference(type));
@@ -25,6 +29,10 @@ namespace UnityEngine.Reflection
 			}
 		}
 
+		/// <summary>
+		/// Splits a given property into each of its multiple values.
+		/// If it has a single value, only the same property is returned.
+		/// </summary>
 		public static IEnumerable<SerializedProperty> Multiple(this SerializedProperty property)
 		{
 			if (property.hasMultipleDifferentValues)

@@ -6,14 +6,22 @@ namespace UnityEngine.Reflection
 	[Serializable]
 	public class UnityVariable : UnityMember
 	{
-		public FieldInfo field { get; private set; }
-		public PropertyInfo property { get; private set; }
+		/// <summary>
+		/// The underlying reflected field, or null if the variable is a property.
+		/// </summary>
+		public FieldInfo fieldInfo { get; private set; }
 
+		/// <summary>
+		/// The underlying property field, or null if the variable is a field.
+		/// </summary>
+		public PropertyInfo propertyInfo { get; private set; }
+
+		/// <inheritdoc />
 		public override void Reflect()
 		{
 			EnsureTargeted();
 
-			Type type = realTarget.GetType();
+			Type type = reflectionTarget.GetType();
 			MemberTypes types = MemberTypes.Property | MemberTypes.Field;
 			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -26,65 +34,77 @@ namespace UnityEngine.Reflection
 
 			MemberInfo variable = variables[0]; // Safe, because there can't possibly be more than one variable of the same name
 
-			field = variable as FieldInfo;
-			property = variable as PropertyInfo;
+			fieldInfo = variable as FieldInfo;
+			propertyInfo = variable as PropertyInfo;
 
 			isReflected = true;
 		}
 
+		/// <summary>
+		/// Retrieves the value of the variable.
+		/// </summary>
 		public object Get()
 		{
 			EnsureReflected();
 
-			if (field != null)
+			if (fieldInfo != null)
 			{
-				return field.GetValue(realTarget);
+				return fieldInfo.GetValue(reflectionTarget);
 			}
 
-			if (property != null)
+			if (propertyInfo != null)
 			{
-				return property.GetValue(realTarget, null);
+				return propertyInfo.GetValue(reflectionTarget, null);
 			}
 
 			throw new InvalidOperationException();
 		}
 
+		/// <summary>
+		/// Retrieves the value of the variable casted to the specified type.
+		/// </summary>
 		public T Get<T>()
 		{
 			return (T)Get();
 		}
 
+		/// <summary>
+		/// Assigns a new value to the variable.
+		/// </summary>
 		public void Set(object value)
 		{
 			EnsureReflected();
 
-			if (field != null)
+			if (fieldInfo != null)
 			{
-				field.SetValue(realTarget, value);
+				fieldInfo.SetValue(reflectionTarget, value);
 			}
 
-			if (property != null)
+			if (propertyInfo != null)
 			{
-				property.SetValue(realTarget, value, null);
+				propertyInfo.SetValue(reflectionTarget, value, null);
 			}
 
 			throw new InvalidOperationException();
 		}
 
+		/// <summary>
+		/// The field or property type of the reflected variable.
+		/// </summary>
 		public Type variableType
 		{
 			get
 			{
 				EnsureReflected();
 
-				if (field != null)
+				if (fieldInfo != null)
 				{
-					return field.FieldType;
+					return fieldInfo.FieldType;
 				}
 
-				if (property != null)
+				if (propertyInfo != null)
 				{
-					return property.PropertyType;
+					return propertyInfo.PropertyType;
 				}
 
 				throw new InvalidOperationException();

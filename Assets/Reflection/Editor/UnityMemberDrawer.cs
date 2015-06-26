@@ -1,7 +1,4 @@
-﻿using Microsoft.CSharp;
-using System;
-using System.CodeDom;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,83 +9,153 @@ namespace UnityEngine.Reflection
 	[CustomPropertyDrawer(typeof(UnityMember))]
 	public abstract class UnityMemberDrawer : PropertyDrawer
 	{
-		protected enum UnityObjectType
+		#region Fields
+
+		/// <summary>
+		/// The filter attribute on the inspected field.
+		/// </summary>
+		protected FilterAttribute filter;
+
+		/// <summary>
+		/// Whether the self-targeted attribute is defined on the inspected field.
+		/// </summary>
+		protected bool isSelfTargeted;
+
+		/// <summary>
+		/// The inspected property, of type UnityMember.
+		/// </summary>
+		protected SerializedProperty property;
+
+		/// <summary>
+		/// The UnityMember.target of the inspected property, of type Object.
+		/// </summary>
+		protected SerializedProperty targetProperty;
+
+		/// <summary>
+		/// The UnityMember.component of the inspected property, of type string.
+		/// </summary>
+		protected SerializedProperty componentProperty;
+
+		/// <summary>
+		/// The UnityMember.name of the inspected property, of type string.
+		/// </summary>
+		protected SerializedProperty nameProperty;
+
+		/// <summary>
+		/// The targeted Unity Objects.
+		/// </summary>
+		protected Object[] targets;
+
+		/// <summary>
+		/// The type of targeted objects.
+		/// </summary>
+		protected UnityObjectType targetType;
+
+		#endregion
+
+		#region Graphical Configuration
+
+		/// <summary>
+		/// The padding between the label and the target and member controls, in vertical display.
+		/// </summary>
+		protected const float LabelPadding = 2;
+
+		/// <summary>
+		/// The padding between the target and member controls, in vertical display.
+		/// </summary>
+		protected const float InnerPadding = 5;
+
+		/// <summary>
+		/// The padding below the drawer, in vertical display.
+		/// </summary>
+		protected const float BottomPadding = 5;
+
+		#endregion
+
+		/// <summary>
+		/// Initializes the members of the drawer via the specified property.
+		/// </summary>
+		protected void Update(SerializedProperty property)
 		{
-			None,
-			Mixed,
-			GameObject,
-			ScriptableObject,
-			Other
+			// Assign the property and sub-properties
+			this.property = property;
+			targetProperty = property.FindPropertyRelative("_target");
+			componentProperty = property.FindPropertyRelative("_component");
+			nameProperty = property.FindPropertyRelative("_name");
+
+			// Fetch the filter
+			filter = (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? DefaultFilter();
+
+			// Find the targets
+			isSelfTargeted = Attribute.IsDefined(fieldInfo, typeof(SelfTargetedAttribute));
+			targets = FindTargets();
+			targetType = DetermineTargetType();
 		}
 
-		protected struct Option<T>
+		/// <summary>
+		/// Calculates the height of the drawer.
+		/// </summary>
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
-			public static readonly Option<T> separator = new Option<T>(default(T), "");
+			Update(property);
 
-			public T value;
-			public string label;
+			// Double the height and add the padding for self-targeting, 
+			// because we'll display the controls on another line.
 
-			public Option(T value, string label)
+			if (isSelfTargeted)
 			{
-				this.value = value;
-				this.label = label;
-			}
-		}
-
-		protected ReflectionAttribute reflectionAttribute;
-		protected bool selfTargeted;
-
-		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-		{
-			reflectionAttribute = (ReflectionAttribute)fieldInfo.GetCustomAttributes(typeof(ReflectionAttribute), true).FirstOrDefault() ?? DefaultReflectionAttribute();
-			selfTargeted = Attribute.IsDefined(fieldInfo, typeof(SelfTargetedAttribute));
-
-			// Properties
-
-			SerializedProperty targetProperty = property.FindPropertyRelative("_target");
-			SerializedProperty componentProperty = property.FindPropertyRelative("_component");
-			SerializedProperty nameProperty = property.FindPropertyRelative("_name");
-
-			// Type
-
-			IEnumerable<Object> targetObjects;
-
-			if (selfTargeted)
-			{
-				targetObjects = property.serializedObject.targetObjects;
+				return base.GetPropertyHeight(property, label);
 			}
 			else
 			{
-				targetObjects = targetProperty.Multiple().Select(p => p.objectReferenceValue);
+				return base.GetPropertyHeight(property, label) * 2 + LabelPadding + BottomPadding;
 			}
+		}
 
-			UnityObjectType unityObjectType = DetermineUnityObjectType(targetObjects);
+		/// <summary>
+		/// Renders the drawer.
+		/// </summary>
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+		{
+			Update(property);
 
-			// Mixed
+			// Mixed Targets
+			// When selections are mixed, the editor shouldn't display the inspector;
+			// it displays a selection refinement instead. But just in case, let's stop here.
 
-			if (unityObjectType == UnityObjectType.Mixed)
+			if (targetType == UnityObjectType.Mixed)
 			{
-				// When selections are mixed, the editor doesn't display the inspector anyway.
-				// It displays a selection refinement instead. Stop just in case.
 				return;
 			}
 
 			// Positioning
+			// When in self targeting mode, hide the target field and display
+			// the member popup as a normal field. When in manual targeting, push
+			// the field down below the label.
 
 			EditorGUI.BeginProperty(position, label, property);
 
+			// Hack the indent level for full control
 			position = EditorGUI.IndentedRect(position);
 			int oldIndent = EditorGUI.indentLevel;
 			EditorGUI.indentLevel = 0;
 
-			position.height = base.GetPropertyHeight(property, label);
-			position.y += EditorGUI.PrefixLabel(position, label).height + LabelPadding;
+			Rect targetPosition;
+			Rect memberPosition;
 
-			Rect targetPosition = position;
-			Rect memberPosition = position;
-
-			if (!selfTargeted || true)
+			if (isSelfTargeted)
 			{
+				targetPosition = new Rect(0, 0, 0, 0);
+				memberPosition = EditorGUI.PrefixLabel(position, label);
+			}
+			else
+			{
+				position.height = base.GetPropertyHeight(property, label);
+				position.y += EditorGUI.PrefixLabel(position, label).height + LabelPadding;
+
+				targetPosition = position;
+				memberPosition = position;
+
 				targetPosition.width *= (1f / 3f);
 				targetPosition.width -= (InnerPadding / 2);
 
@@ -98,60 +165,73 @@ namespace UnityEngine.Reflection
 			}
 
 			// Target
+			// When in self targeting mode, assign the target property to the
+			// target object behind the scenes. When in manual targeting mode,
+			// display a standard Object property field.
 
-			if (selfTargeted)
+			if (isSelfTargeted)
 			{
 				foreach (var singleTargetProperty in targetProperty.Multiple())
 				{
 					singleTargetProperty.objectReferenceValue = singleTargetProperty.serializedObject.targetObject;
 				}
-
-				EditorGUI.BeginDisabledGroup(true); // TODO:  Remove debug field.
-				EditorGUI.PropertyField(targetPosition, targetProperty, GUIContent.none);
-				EditorGUI.EndDisabledGroup();
 			}
 			else
 			{
 				EditorGUI.PropertyField(targetPosition, targetProperty, GUIContent.none);
 			}
 
-			if (unityObjectType == UnityObjectType.Other)
+			// Other Targets
+			// Some Unity Objects, like Assets, are not supported by the drawer. 
+			// Just display an error message to let the user change their target.
+
+			if (targetType == UnityObjectType.Other)
 			{
 				EditorGUI.HelpBox(memberPosition, "Unsupported Unity Object type.", MessageType.None);
 				return;
 			}
 
 			// Member
+			// Display a list of all available reflected members in a popup.
 
-			var options = new List<Option<string>>();
+			var options = new List<PopupOption<string>>();
 
-			string multipleValues = "#_MULTIPLE";
+			// The selected option
+			// TODO: Figure out a way to display the label instead of the popup selection
+			// Forum: http://forum.unity3d.com/threads/336305/
+			var selectedOption = new PopupOption<string>();
 
-			options.Add(new Option<string>(null, string.Format("No {0}", memberLabel)));
-
-			string selectedValue = null;
-			//string selectedLabel = null; // TODO: Figure out a way to display that instead when the popup isn't focused
-
-			if (unityObjectType == UnityObjectType.GameObject)
+			if (targetType == UnityObjectType.GameObject)
 			{
-				if (HasSharedGameObject(targetObjects))
+				// Check if all targets have a GameObject (none are empty).
+				// If they do, display all members of the GameObject type.
+
+				if (HasSharedGameObject())
 				{
 					var gameObjectOptions = GetMemberOptions(typeof(GameObject));
 
 					foreach (var gameObjectOption in gameObjectOptions)
 					{
+						// Prefix label by GameObject for popup clarity.
+
 						var prefixedOption = gameObjectOption;
+						prefixedOption.value = gameObjectOption.value;
 						prefixedOption.label = string.Format("GameObject/{0}", gameObjectOption.label);
 						options.Add(prefixedOption);
 					}
 				}
 
-				foreach (Type componentType in GetSharedComponentTypes(targetObjects))
+				// Find all shared component types across targets.
+				// Display all members of each one found.
+
+				foreach (Type componentType in GetSharedComponentTypes())
 				{
 					var componentOptions = GetMemberOptions(componentType);
 
 					foreach (var componentOption in componentOptions)
 					{
+						// Prefix label and option by component type for clear distinction.
+
 						var prefixedOption = componentOption;
 						prefixedOption.value = string.Format("{0}.{1}", componentType.Name, componentOption.value);
 						prefixedOption.label = string.Format("{0}/{1}", componentType.Name, componentOption.label);
@@ -159,47 +239,84 @@ namespace UnityEngine.Reflection
 					}
 				}
 
+				// Determine which option is currently selected.
+				// If no component is specified, the current member is directly on the GameObject.
+				// If a component is specified, the current member is on that component.
+				// Adapt the prefixes to match our hidden values defined earlier.
+
 				if (string.IsNullOrEmpty(componentProperty.stringValue))
 				{
-					selectedValue = nameProperty.stringValue;
-					//selectedLabel = string.format("GameObject.{0}", nameProperty.stringValue);
+					selectedOption.value = nameProperty.stringValue;
+					selectedOption.label = string.Format("GameObject.{0}", nameProperty.stringValue);
 				}
 				else
 				{
-					selectedValue = string.Format("{0}.{1}", componentProperty.stringValue, nameProperty.stringValue);
-					//selectedLabel = selectedValue;
+					selectedOption.value = string.Format("{0}.{1}", componentProperty.stringValue, nameProperty.stringValue);
+					selectedOption.label = selectedOption.value;
 				}
 			}
-			else if (unityObjectType == UnityObjectType.ScriptableObject)
+			else if (targetType == UnityObjectType.ScriptableObject)
 			{
-				Type scriptableObjectType = GetSharedScriptableObjectType(targetObjects);
+				// ScriptableObject Target
+				// Make sure all targets share the same ScriptableObject Type.
+				// If they do, display all members of that type.
+
+				Type scriptableObjectType = GetSharedScriptableObjectType();
 
 				if (scriptableObjectType != null)
 				{
 					options.AddRange(GetMemberOptions(scriptableObjectType));
 
-					selectedValue = componentProperty.stringValue;
-					//selectedLabel = selectedValue;
+					// Determine which option is currently selected.
+					// Since the component property is ignored on ScriptableObjects,
+					// it should always be equal to the name property.
+
+					selectedOption.value = nameProperty.stringValue;
+					selectedOption.label = selectedOption.value;
 				}
 			}
 
+			// Special Options
+			// Display the two special options: one for no member (null), and
+			// one to indicate properties have multiple different values without actually
+			// changing them.
+
+			var noneOption = new PopupOption<string>(null, string.Format("No {0}", memberLabel));
+
+			bool hasOptions = options.Count > 0;
+
 			if (componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues)
 			{
-				options.Insert(0, new Option<string>(multipleValues, "—"));
-				selectedValue = multipleValues;
-				options.Insert(1, Option<string>.separator);
-			}
+				options.Insert(0, noneOption);
+				options.Insert(1, PopupOption<string>.separator);
+				options.Insert(2, PopupOption<string>.multiple);
 
-			if (options.Count > (selectedValue == multipleValues ? 3 : 1))
+				if (hasOptions)
+				{
+					options.Insert(3, PopupOption<string>.separator);
+				}
+
+				selectedOption = PopupOption<string>.multiple;
+			}
+			else
 			{
-				options.Insert(selectedValue == multipleValues ? 3 : 1, Option<string>.separator);
+				options.Insert(0, noneOption);
+
+				if (hasOptions)
+				{
+					options.Insert(1, PopupOption<string>.separator);
+				}
 			}
 
-			int selectedIndex = Mathf.Max(0, options.FindIndex(option => option.value == selectedValue));
+			// Options Popup
+			// Display the options popup with the current option choice.
+			// If no target object is found, render it as disabled.
+
+			int selectedIndex = Mathf.Max(0, options.FindIndex(option => option.value == selectedOption.value));
 
 			string[] optionLabels = options.Select(option => option.label).ToArray();
 
-			if (unityObjectType == UnityObjectType.None) EditorGUI.BeginDisabledGroup(true);
+			if (targetType == UnityObjectType.None) EditorGUI.BeginDisabledGroup(true);
 
 			int newIndex = EditorGUI.Popup
 			(
@@ -208,25 +325,36 @@ namespace UnityEngine.Reflection
 				optionLabels
 			);
 
-			if (unityObjectType == UnityObjectType.None) EditorGUI.EndDisabledGroup();
+			if (targetType == UnityObjectType.None) EditorGUI.EndDisabledGroup();
 
-			string newOption = options[newIndex].value;
+			string newValue = options[newIndex].value;
 
+			// Apply Changes
 
-			if (newOption == multipleValues)
+			if (newValue == PopupOption<string>.multiple.value)
 			{
-				// Nothing to do
+				// Multiple Values
+				// Nothing to do, as we don't want to actually affect the properties.
+				// Leave them as they are.
 			}
-			else if (newOption == null)
+			else if (newValue == null)
 			{
+				// No Value
+				// Set the properties to null.
+
 				componentProperty.stringValue = null;
 				nameProperty.stringValue = null;
 			}
-			else if (unityObjectType == UnityObjectType.GameObject)
+			else if (targetType == UnityObjectType.GameObject)
 			{
-				if (newOption.Contains('.'))
+				// GameObject Target
+				// Check if the new value is in dot-notation, which would indicate
+				// it refers to a component and a name. Otherwise, it only refers
+				// to a name.
+
+				if (newValue.Contains('.'))
 				{
-					string[] newOptionParts = newOption.Split('.');
+					string[] newOptionParts = newValue.Split('.');
 
 					componentProperty.stringValue = newOptionParts[0];
 					nameProperty.stringValue = newOptionParts[1];
@@ -234,26 +362,59 @@ namespace UnityEngine.Reflection
 				else
 				{
 					componentProperty.stringValue = null;
-					nameProperty.stringValue = newOption;
+					nameProperty.stringValue = newValue;
 				}
 			}
-			else if (unityObjectType == UnityObjectType.ScriptableObject)
+			else if (targetType == UnityObjectType.ScriptableObject)
 			{
+				// ScriptableObject Target
+				// The component property is always ignored, therefore only
+				// set the name property to the new value.
+
 				componentProperty.stringValue = null;
-				nameProperty.stringValue = newOption;
+				nameProperty.stringValue = newValue;
 			}
 
+			// Restore the indent level
 			EditorGUI.indentLevel = oldIndent;
 
 			EditorGUI.EndProperty();
 		}
 
-		protected UnityObjectType DetermineUnityObjectType(IEnumerable<Object> targetObjects)
+		#region Targeting
+
+		/// <summary>
+		/// Get the list of targets on the inspected objects.
+		/// </summary>
+		protected Object[] FindTargets()
+		{
+			if (isSelfTargeted)
+			{
+				// In self targeting mode, the targets are the inspected objects themselves.
+
+				return property.serializedObject.targetObjects;
+			}
+			else
+			{
+				// In manual targeting mode, the targets the values of each target property.
+
+				return targetProperty.Multiple().Select(p => p.objectReferenceValue).ToArray();
+			}
+		}
+
+		/// <summary>
+		/// Determine the Unity type of the targets.
+		/// </summary>
+		protected UnityObjectType DetermineTargetType()
 		{
 			UnityObjectType unityObjectType = UnityObjectType.None;
 
-			foreach (Object targetObject in targetObjects)
+			foreach (Object targetObject in targets)
 			{
+				// Null (non-specified) targets don't affect the type
+				// If no non-null target is specified, the type will be None
+				// as the loop will simply exit.
+
 				if (targetObject == null)
 				{
 					continue;
@@ -261,6 +422,12 @@ namespace UnityEngine.Reflection
 
 				if (targetObject is GameObject || targetObject is Component)
 				{
+					// For GameObjects and Components, the target is either the
+					// GameObject itself, or the one to which the Component belongs.
+					
+					// If a ScriptableObject target was previously found,
+					// return that the targets are of mixed types.
+
 					if (unityObjectType == UnityObjectType.ScriptableObject)
 					{
 						return UnityObjectType.Mixed;
@@ -270,6 +437,12 @@ namespace UnityEngine.Reflection
 				}
 				else if (targetObject is ScriptableObject)
 				{
+					// For ScriptableObjects, the target is simply the
+					// ScriptableObject itself.
+
+					// If a GameObject target was previously found,
+					// return that the targets are of mixed types.
+
 					if (unityObjectType == UnityObjectType.GameObject)
 					{
 						return UnityObjectType.Mixed;
@@ -279,6 +452,8 @@ namespace UnityEngine.Reflection
 				}
 				else
 				{
+					// Other target types
+
 					return UnityObjectType.Other;
 				}
 			}
@@ -286,20 +461,26 @@ namespace UnityEngine.Reflection
 			return unityObjectType;
 		}
 
-		public bool HasSharedGameObject(IEnumerable<Object> targetObjects)
+		/// <summary>
+		/// Determines if the targets all share a GameObject.
+		/// </summary>
+		public bool HasSharedGameObject()
 		{
-			return !targetObjects.Contains(null);
+			return !targets.Contains(null);
 		}
 
-		protected IEnumerable<Type> GetSharedComponentTypes(IEnumerable<Object> targetObjects)
+		/// <summary>
+		/// Determines which types of Components are shared on all GameObject targets.
+		/// </summary>
+		protected IEnumerable<Type> GetSharedComponentTypes()
 		{
-			if (targetObjects.Contains(null))
+			if (targets.Contains(null))
 			{
 				return Enumerable.Empty<Type>();
 			}
 
-			var childrenComponents = targetObjects.OfType<GameObject>().Select(gameObject => gameObject.GetComponents<Component>());
-			var siblingComponents = targetObjects.OfType<Component>().Select(component => component.GetComponents<Component>());
+			var childrenComponents = targets.OfType<GameObject>().Select(gameObject => gameObject.GetComponents<Component>());
+			var siblingComponents = targets.OfType<Component>().Select(component => component.GetComponents<Component>());
 
 			return childrenComponents
 				.Concat(siblingComponents)
@@ -308,27 +489,38 @@ namespace UnityEngine.Reflection
 				.Distinct();
 		}
 
-		protected Type GetSharedScriptableObjectType(IEnumerable<Object> targetObjects)
+		/// <summary>
+		/// Determines which type of ScriptableObject is shared across targets.
+		/// Returns null if none are shared.
+		/// </summary>
+		protected Type GetSharedScriptableObjectType()
 		{
-			if (targetObjects.Contains(null))
+			if (targets.Contains(null))
 			{
 				return null;
 			}
 
-			return targetObjects
+			return targets
 				.OfType<ScriptableObject>()
 				.Select(scriptableObject => scriptableObject.GetType())
 				.Distinct()
-				.SingleOrDefault();
+				.SingleOrDefault(); // Null (default) if multiple or zero
 		}
 
-		protected List<Option<string>> GetMemberOptions(Type type)
+		#endregion
+
+		#region Reflection
+
+		/// <summary>
+		/// Gets the list of members available on a type as popup options.
+		/// </summary>
+		protected List<PopupOption<string>> GetMemberOptions(Type type)
 		{
-			var options = new List<Option<string>>();
+			var options = new List<PopupOption<string>>();
 
 			var memberNames = new List<string>(); ;
 
-			foreach(MemberInfo member in 
+			foreach (MemberInfo member in
 				type
 				.GetMembers(validBindingFlags)
 				.Where(member => validMemberTypes.HasFlag(member.MemberType))
@@ -356,25 +548,23 @@ namespace UnityEngine.Reflection
 					label = string.Format("{0} {1} ()", ((MethodInfo)member).ReturnType.PrettyName(), member.Name);
 				}
 
-				options.Add(new Option<string>(value, label));
+				options.Add(new PopupOption<string>(value, label));
 				memberNames.Add(member.Name);
 			}
 
-			// Alphabetic sort
+			// Alphabetic sort: 
 			// options.Sort((o1, o2) => o1.value.CompareTo(o2.value));
 
 			return options;
 		}
 
-		protected const float LabelPadding = 2;
-		protected const float BottomPadding = 7;
-		protected const float InnerPadding = 5;
+		#endregion
 
-		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-		{
-			return base.GetPropertyHeight(property, label) * 2 + LabelPadding + BottomPadding;
-		}
+		#region Filtering
 
+		/// <summary>
+		/// The label of a member, displayed in options.
+		/// </summary>
 		protected virtual string memberLabel
 		{
 			get
@@ -383,27 +573,38 @@ namespace UnityEngine.Reflection
 			}
 		}
 
-		protected virtual ReflectionAttribute DefaultReflectionAttribute()
+		/// <summary>
+		/// The default applied filter attribute if none is specified.
+		/// </summary>
+		protected virtual FilterAttribute DefaultFilter()
 		{
-			return new ReflectionAttribute();
+			return new FilterAttribute();
 		}
 
+		/// <summary>
+		/// The valid BindingFlags when looking for reflected members.
+		/// </summary>
 		protected virtual BindingFlags validBindingFlags
 		{
 			get
 			{
+				// Build the flags from the filter attribute
+
 				BindingFlags flags = (BindingFlags)0;
 
-				if (reflectionAttribute.Public) flags |= BindingFlags.Public;
-				if (reflectionAttribute.NonPublic) flags |= BindingFlags.NonPublic;
-				if (reflectionAttribute.Instance) flags |= BindingFlags.Instance;
-				if (reflectionAttribute.Static) flags |= BindingFlags.Static;
-				if (!reflectionAttribute.Inherited) flags |= BindingFlags.DeclaredOnly;
+				if (filter.Public) flags |= BindingFlags.Public;
+				if (filter.NonPublic) flags |= BindingFlags.NonPublic;
+				if (filter.Instance) flags |= BindingFlags.Instance;
+				if (filter.Static) flags |= BindingFlags.Static;
+				if (!filter.Inherited) flags |= BindingFlags.DeclaredOnly;
 
 				return flags;
 			}
 		}
 
+		/// <summary>
+		/// The valid MemberTypes when looking for reflected members.
+		/// </summary>
 		protected virtual MemberTypes validMemberTypes
 		{
 			get
@@ -412,17 +613,26 @@ namespace UnityEngine.Reflection
 			}
 		}
 
+		/// <summary>
+		/// Determines whether a given MemberInfo should be included in the options.
+		/// This check follows the BindingFlags and MemberTypes filtering. 
+		/// </summary>
 		protected virtual bool ValidateMember(MemberInfo member)
 		{
 			return true;
 		}
 
+		/// <summary>
+		/// Determines whether a MemberInfo of the given type should be included in the options.
+		/// </summary>
 		protected virtual bool ValidateMemberType(Type type)
 		{
 			bool validFamily = false;
 			bool validType;
 
-			TypeFamily families = reflectionAttribute.TypeFamilies;
+			// Allow type families based on the filter attribute
+
+			TypeFamily families = filter.TypeFamilies;
 
 			if (families.HasFlag(TypeFamily.Array)) validFamily |= type.IsArray;
 			if (families.HasFlag(TypeFamily.Class)) validFamily |= type.IsClass;
@@ -432,11 +642,14 @@ namespace UnityEngine.Reflection
 			if (families.HasFlag(TypeFamily.Reference)) validFamily |= !type.IsValueType;
 			if (families.HasFlag(TypeFamily.Value)) validFamily |= type.IsValueType && type != typeof(void);
 
-			if (reflectionAttribute.Types.Length > 0)
+			// Allow types based on the filter attribute
+			// If no filter types are specified, all types are allowed.
+
+			if (filter.Types.Count > 0)
 			{
 				validType = false;
 
-				foreach (Type allowedType in reflectionAttribute.Types)
+				foreach (Type allowedType in filter.Types)
 				{
 					if (allowedType.IsAssignableFrom(type))
 					{
@@ -452,5 +665,7 @@ namespace UnityEngine.Reflection
 
 			return validFamily && validType;
 		}
+
+		#endregion
 	}
 }

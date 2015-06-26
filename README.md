@@ -29,7 +29,7 @@ Ugh. Here's a picture:
 
 Import the `Assets/Reflection` folder in your project and you're good to go!
 
-# Usage
+## Usage
 
 1. Create a behaviour script
 2. Add `using UnityEngine.Reflection;` to your namespaces.
@@ -56,7 +56,7 @@ public class BasicExample : MonoBehaviour
 }
 ```
 
-## Basic Usage
+### Basic Usage
 There are 3 commonly used methods to deal with reflected members. Each are described below.
 
 `Get` and `Invoke` also have typed generic equivalents that will attempt a cast.
@@ -67,12 +67,12 @@ There are 3 commonly used methods to deal with reflected members. Each are descr
 object UnityVariable.Get()
 ```
 
-Retrieves the value of the variable. The typed version attemps a cast to T.
+Retrieves the value of the variable.
 
 #### UnityVariable.Set
 
 ```csharp
-object UnityVariable.Set(object value)
+void UnityVariable.Set(object value)
 ```
 
 Assigns a new value to the variable.
@@ -85,9 +85,29 @@ object UnityMethod.Invoke(params object[] args)
 
 Invokes the method with any number of arguments of any type and returns its return value, or null if there isn't any (void).
 
-## Advanced Usage
+---
 
-### Self-Targeting
+You can also get the type of the reflected member using the following shortcuts:
+
+#### UnityVariable.variableType
+
+```csharp
+Type UnityVariable.variableType { get; }
+```
+
+The field or property type of the reflected variable.
+
+#### UnityMethod.returnType
+
+```csharp
+Type UnityMethod.returnType { get; }
+```
+
+The return type of the reflected method.
+
+### Advanced Usage
+
+#### Self-Targeting
 
 You can tell the inspector to look on the current object instead of manually specifying one by adding the `[SelfTargeted]` attribute. For example:
 
@@ -102,9 +122,9 @@ public class AdvancedExample : MonoBehaviour
 }
 ```
 
-### Member Filtering
+#### Member Filtering
 
-You can specify which members will appear in the inspector using the `Reflection` attribute. You can combine a number of options to display only the members you want. For example:
+You can specify which members will appear in the inspector using the `Filter` attribute. You can combine a number of options to display only the members you want. For example:
 
 ```csharp
 using UnityEngine;
@@ -113,35 +133,35 @@ using UnityEngine.Reflection;
 public class AdvancedExample : MonoBehaviour
 {
     // Only show variables of type Transform
-    [Reflection(typeof(Transform))]
+    [Filter(typeof(Transform))]
     public UnityVariable transformVariable;
 
     // Only show methods that return an integer or a float
-    [Reflection(typeof(int), typeof(float))]
+    [Filter(typeof(int), typeof(float))]
     public UnityMethod numericMethod;
 
     // Only show methods that return primitives or enums
-    [Reflection(TypeFamilies = TypeFamily.Primitive | TypeFamily.Enum)]
+    [Filter(TypeFamilies = TypeFamily.Primitive | TypeFamily.Enum)]
     public UnityMethod primitiveOrEnumMethod;
 
 	// Only show static methods
-	[Reflection(Static = true, Instance = false)]
+	[Filter(Static = true, Instance = false)]
 	public UnityMethod staticMethod;
 
 	// Include non-public variables
-    [Reflection(NonPublic = true)]
+    [Filter(NonPublic = true)]
 	public UnityVariable hiddenVariable;
 
     // Exclude readonly properties
-    [Reflection(ReadOnly = false)]
+    [Filter(ReadOnly = false)]
     public UnityVariable writableVariable;
 
     // Only show methods that are on the defined on the object itself
-    [Reflection(Inherited = false)]
+    [Filter(Inherited = false)]
     public UnityMethod definedMethod;
 
     // Combine any of the above options
-    [Reflection(typeof(Collider), Static = true, ReadOnly = false)]
+    [Filter(typeof(Collider), Static = true, ReadOnly = false)]
     public UnityVariable colliderVariable;
 }
 ```
@@ -181,9 +201,9 @@ You can combine them with the bitwise or operator:
 TypeFamily enumsOrInterfaces = TypeFamily.Enum | TypeFamily.Interface;
 ```
 
-### Overriding defaults
+#### Overriding Defaults
 
-You can override the defaults by editing the inspector drawer classes and modifying the `DefaultReflectionAttribute()` method.
+You can override the defaults by editing the inspector drawer classes and modifying the `DefaultFilter()` method.
 
 - For variables: `Reflection/Editor/UnityVariableDrawer.cs`
 - For methods: `Reflection/Editor/UnityMethodDrawer.cs`
@@ -199,12 +219,12 @@ namespace UnityEngine.Reflection
 	[CustomPropertyDrawer(typeof(UnityVariable))]
 	public class UnityVariableDrawer : UnityMemberDrawer
 	{
-		protected override ReflectionAttribute DefaultReflectionAttribute()
+		protected override FilterAttribute DefaultFilter()
 		{
-			ReflectionAttribute reflection = base.DefaultReflectionAttribute();
+			FilterAttribute filter = base.DefaultFilter();
 
 			// Override defaults here
-            reflection.NonPublic = true;
+            filter.NonPublic = true;
 
 			return reflection;
 		}
@@ -214,7 +234,35 @@ namespace UnityEngine.Reflection
 }
 ```
 
-# Contributing
+### Direct Access
+
+If you want to directly access the `System.Reflection` objects, you can do so using the following properties. Note that you must previously have reflected the member, either manually via `UnityMember.Reflect()`, or automatically by accessing / invoking it.
+
+#### UnityVariable.fieldInfo
+
+```csharp
+FieldInfo UnityVariable.fieldInfo { get; }
+```
+
+The underlying reflected field, or null if the variable is a property.
+
+#### UnityVariable.propertyInfo
+
+```csharp
+PropertyInfo UnityVariable.propertyInfo { get; }
+```
+
+The underlying reflected property, or null if the variable is a field.
+
+#### UnityMethod.methodInfo
+
+```csharp
+MethodInfo UnityVariable.methodInfo { get; }
+```
+
+The underlying reflected method.
+
+## Contributing
 
 I'll happily accept pull requests if you have improvements or fixes to suggest.
 
@@ -222,9 +270,8 @@ I'll happily accept pull requests if you have improvements or fixes to suggest.
 
 - Method overloading (requires method signature distinction and serialization)
 - Figure out a way to make the member dropdown less verbose (like `UnityEvent`'s)
-- Document the source
 
-#  License
+##  License
 
 The whole source is under MIT License, which basically means you can freely use and redistribute it in your commercial and non-commercial projects. See [the license file](LICENSE) for the boring details.
 

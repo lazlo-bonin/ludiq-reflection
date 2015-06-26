@@ -6,15 +6,17 @@ namespace UnityEngine.Reflection
 	[CustomPropertyDrawer(typeof(UnityVariable))]
 	public class UnityVariableDrawer : UnityMemberDrawer
 	{
-		protected override ReflectionAttribute DefaultReflectionAttribute()
+		/// <inheritdoc />
+		protected override FilterAttribute DefaultFilter()
 		{
-			ReflectionAttribute reflection = base.DefaultReflectionAttribute();
+			FilterAttribute filter = base.DefaultFilter();
 
 			// Override defaults here
 
-			return reflection;
+			return filter;
 		}
 
+		/// <inheritdoc />
 		protected override string memberLabel
 		{
 			get
@@ -23,6 +25,7 @@ namespace UnityEngine.Reflection
 			}
 		}
 
+		/// <inheritdoc />
 		protected override MemberTypes validMemberTypes
 		{
 			get
@@ -31,6 +34,7 @@ namespace UnityEngine.Reflection
 			}
 		}
 
+		/// <inheritdoc />
 		protected override bool ValidateMember(MemberInfo member)
 		{
 			bool valid = base.ValidateMember(member);
@@ -38,19 +42,23 @@ namespace UnityEngine.Reflection
 			FieldInfo field = member as FieldInfo;
 			PropertyInfo property = member as PropertyInfo;
 
-			if (field != null)
+			if (field != null) // Member is a field
 			{
+				// Validate type based on field type
 				valid &= ValidateMemberType(field.FieldType);
 
-				if (!reflectionAttribute.ReadOnly) valid &= !field.IsLiteral || !field.IsInitOnly;
+				// Exclude constants (literal) and readonly (init) fields if
+				// the filter rejects read-only fields.
+				if (!filter.ReadOnly) valid &= !field.IsLiteral || !field.IsInitOnly;
 			}
-
-			if (property != null)
+			else if (property != null) // Member is a method
 			{
+				// Validate type based on property type
 				valid &= ValidateMemberType(property.PropertyType);
 
-				if (!reflectionAttribute.ReadOnly) valid &= property.CanWrite;
-				if (!reflectionAttribute.WriteOnly) valid &= property.CanRead;
+				// Exclude read-only and write-only properties
+				if (!filter.ReadOnly) valid &= property.CanWrite;
+				if (!filter.WriteOnly) valid &= property.CanRead;
 			}
 
 			return valid;

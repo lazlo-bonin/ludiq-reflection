@@ -49,12 +49,12 @@ namespace UnityEngine.Reflection
 		public bool isReflected { get; protected set; }
 
 		/// <summary>
-		/// The real object on which to perform reflection.
-		/// For GameObjects, this is the component of type <see cref="UnityMember.component"/> or the object itself if null.
-		/// For ScriptableObjects, this is the object itself. 
+		/// The object on which to perform reflection.
+		/// For GameObjects and Component targets, this is the component of type <see cref="UnityMember.component"/> or the object itself if null.
+		/// For ScriptableObjects targets, this is the object itself. 
 		/// Other Unity Objects are not supported.
 		/// </summary>
-		protected Object realTarget { get; private set; }
+		protected Object reflectionTarget { get; private set; }
 
 		/// <summary>
 		/// Gathers and caches the reflection target for the member.
@@ -71,8 +71,12 @@ namespace UnityEngine.Reflection
 
 			if (targetAsGameObject != null || targetAsComponent != null)
 			{
+				// The target is a GameObject or a Component.
+
 				if (!string.IsNullOrEmpty(component))
 				{
+					// If a component is specified, look for it on the target.
+
 					Component componentObject;
 
 					if (targetAsGameObject != null)
@@ -89,18 +93,20 @@ namespace UnityEngine.Reflection
 						throw new UnityException(string.Format("Target object does not contain a component of type '{0}'.", component));
 					}
 
-					realTarget = componentObject;
+					reflectionTarget = componentObject;
 					return;
 				}
 				else
 				{
+					// Otherwise, return the GameObject itself.
+
 					if (targetAsGameObject != null)
 					{
-						realTarget = targetAsGameObject;
+						reflectionTarget = targetAsGameObject;
 					}
 					else // if (targetAsComponent != null)
 					{
-						realTarget = targetAsComponent.gameObject;
+						reflectionTarget = targetAsComponent.gameObject;
 					}
 
 					return;
@@ -111,7 +117,9 @@ namespace UnityEngine.Reflection
 
 			if (scriptableObject != null)
 			{
-				realTarget = scriptableObject;
+				// The real target is directly the ScriptableObject target.
+
+				reflectionTarget = scriptableObject;
 				return;
 			}
 

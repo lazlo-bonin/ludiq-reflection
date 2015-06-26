@@ -6,15 +6,17 @@ namespace UnityEngine.Reflection
 	[CustomPropertyDrawer(typeof(UnityMethod))]
 	public class UnityMethodDrawer : UnityMemberDrawer
 	{
-		protected override ReflectionAttribute DefaultReflectionAttribute()
+		/// <inheritdoc />
+		protected override FilterAttribute DefaultFilter()
 		{
-			ReflectionAttribute reflection = base.DefaultReflectionAttribute();
+			FilterAttribute filter = base.DefaultFilter();
 
 			// Override defaults here
 
-			return reflection;
+			return filter;
 		}
 
+		/// <inheritdoc />
 		protected override string memberLabel
 		{
 			get
@@ -23,6 +25,7 @@ namespace UnityEngine.Reflection
 			}
 		}
 
+		/// <inheritdoc />
 		protected override MemberTypes validMemberTypes
 		{
 			get
@@ -31,13 +34,17 @@ namespace UnityEngine.Reflection
 			}
 		}
 
+		/// <inheritdoc />
 		protected override bool ValidateMember(MemberInfo member)
 		{
 			bool valid = base.ValidateMember(member);
 
 			MethodInfo method = (MethodInfo)member;
 
+			// Validate type based on return type
 			valid &= ValidateMemberType(method.ReturnType);
+
+			// Exclude special compiler methods
 			valid &= !method.IsSpecialName;
 
 			return valid;

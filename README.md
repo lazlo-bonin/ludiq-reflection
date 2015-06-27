@@ -94,7 +94,7 @@ Invokes the method with any number of arguments of any type and returns its retu
 
 You can also get the type of the reflected member using the following shortcuts:
 
-##### UnityVariable.variableType
+##### UnityVariable.type
 
 ```csharp
 Type UnityVariable.type { get; }

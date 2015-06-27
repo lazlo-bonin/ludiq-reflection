@@ -7,7 +7,7 @@ using UnityEditor;
 namespace UnityEngine.Reflection
 {
 	[CustomPropertyDrawer(typeof(UnityMember))]
-	public abstract class UnityMemberDrawer : PropertyDrawer
+	public abstract class UnityMemberDrawer : TargetedDrawer
 	{
 		#region Fields
 
@@ -17,19 +17,9 @@ namespace UnityEngine.Reflection
 		protected FilterAttribute filter;
 
 		/// <summary>
-		/// Whether the self-targeted attribute is defined on the inspected field.
-		/// </summary>
-		protected bool isSelfTargeted;
-
-		/// <summary>
 		/// The inspected property, of type UnityMember.
 		/// </summary>
 		protected SerializedProperty property;
-
-		/// <summary>
-		/// The UnityMember.target of the inspected property, of type Object.
-		/// </summary>
-		protected SerializedProperty targetProperty;
 
 		/// <summary>
 		/// The UnityMember.component of the inspected property, of type string.
@@ -53,33 +43,14 @@ namespace UnityEngine.Reflection
 
 		#endregion
 
-		#region Graphical Configuration
-
-		/// <summary>
-		/// The padding between the label and the target and member controls, in vertical display.
-		/// </summary>
-		protected const float LabelPadding = 2;
-
-		/// <summary>
-		/// The padding between the target and member controls, in vertical display.
-		/// </summary>
-		protected const float InnerPadding = 5;
-
-		/// <summary>
-		/// The padding below the drawer, in vertical display.
-		/// </summary>
-		protected const float BottomPadding = 5;
-
-		#endregion
-
-		/// <summary>
-		/// Initializes the members of the drawer via the specified property.
-		/// </summary>
-		protected void Update(SerializedProperty property)
+		/// <inheritdoc />
+		protected override void Update(SerializedProperty property)
 		{
+			// Update the targeted drawer
+			base.Update(property);
+
 			// Assign the property and sub-properties
 			this.property = property;
-			targetProperty = property.FindPropertyRelative("_target");
 			componentProperty = property.FindPropertyRelative("_component");
 			nameProperty = property.FindPropertyRelative("_name");
 
@@ -87,111 +58,23 @@ namespace UnityEngine.Reflection
 			filter = (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? DefaultFilter();
 
 			// Find the targets
-			isSelfTargeted = Attribute.IsDefined(fieldInfo, typeof(SelfTargetedAttribute));
 			targets = FindTargets();
 			targetType = DetermineTargetType();
 		}
 
-		/// <summary>
-		/// Calculates the height of the drawer.
-		/// </summary>
-		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+		/// <inheritdoc />
+		protected override void RenderMemberControl(Rect position)
 		{
-			Update(property);
-
-			// Double the height and add the padding for self-targeting, 
-			// because we'll display the controls on another line.
-
-			if (isSelfTargeted)
-			{
-				return base.GetPropertyHeight(property, label);
-			}
-			else
-			{
-				return base.GetPropertyHeight(property, label) * 2 + LabelPadding + BottomPadding;
-			}
-		}
-
-		/// <summary>
-		/// Renders the drawer.
-		/// </summary>
-		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-		{
-			Update(property);
-
-			// Mixed Targets
-			// When selections are mixed, the editor shouldn't display the inspector;
-			// it displays a selection refinement instead. But just in case, let's stop here.
-
-			if (targetType == UnityObjectType.Mixed)
-			{
-				return;
-			}
-
-			// Positioning
-			// When in self targeting mode, hide the target field and display
-			// the member popup as a normal field. When in manual targeting, push
-			// the field down below the label.
-
-			EditorGUI.BeginProperty(position, label, property);
-
-			// Hack the indent level for full control
-			position = EditorGUI.IndentedRect(position);
-			int oldIndent = EditorGUI.indentLevel;
-			EditorGUI.indentLevel = 0;
-
-			Rect targetPosition;
-			Rect memberPosition;
-
-			if (isSelfTargeted)
-			{
-				targetPosition = new Rect(0, 0, 0, 0);
-				memberPosition = EditorGUI.PrefixLabel(position, label);
-			}
-			else
-			{
-				position.height = base.GetPropertyHeight(property, label);
-				position.y += EditorGUI.PrefixLabel(position, label).height + LabelPadding;
-
-				targetPosition = position;
-				memberPosition = position;
-
-				targetPosition.width *= (1f / 3f);
-				targetPosition.width -= (InnerPadding / 2);
-
-				memberPosition.width *= (2f / 3f);
-				memberPosition.width -= (InnerPadding / 2);
-				memberPosition.x = targetPosition.xMax + InnerPadding;
-			}
-
-			// Target
-			// When in self targeting mode, assign the target property to the
-			// target object behind the scenes. When in manual targeting mode,
-			// display a standard Object property field.
-
-			if (isSelfTargeted)
-			{
-				foreach (var singleTargetProperty in targetProperty.Multiple())
-				{
-					singleTargetProperty.objectReferenceValue = singleTargetProperty.serializedObject.targetObject;
-				}
-			}
-			else
-			{
-				EditorGUI.PropertyField(targetPosition, targetProperty, GUIContent.none);
-			}
-
 			// Other Targets
 			// Some Unity Objects, like Assets, are not supported by the drawer. 
 			// Just display an error message to let the user change their target.
 
 			if (targetType == UnityObjectType.Other)
 			{
-				EditorGUI.HelpBox(memberPosition, "Unsupported Unity Object type.", MessageType.None);
+				EditorGUI.HelpBox(position, "Unsupported Unity Object type.", MessageType.None);
 				return;
 			}
 
-			// Member
 			// Display a list of all available reflected members in a popup.
 
 			var options = new List<PopupOption<string>>();
@@ -199,7 +82,7 @@ namespace UnityEngine.Reflection
 			// The selected option
 			// TODO: Figure out a way to display the label instead of the popup selection
 			// Forum: http://forum.unity3d.com/threads/336305/
-			var selectedOption = new PopupOption<string>();
+			PopupOption<string> selectedOption = null;
 
 			if (targetType == UnityObjectType.GameObject)
 			{
@@ -214,10 +97,9 @@ namespace UnityEngine.Reflection
 					{
 						// Prefix label by GameObject for popup clarity.
 
-						var prefixedOption = gameObjectOption;
-						prefixedOption.value = gameObjectOption.value;
-						prefixedOption.label = string.Format("GameObject/{0}", gameObjectOption.label);
-						options.Add(prefixedOption);
+						gameObjectOption.label = string.Format("GameObject/{0}", gameObjectOption.label);
+
+						options.Add(gameObjectOption);
 					}
 				}
 
@@ -232,10 +114,10 @@ namespace UnityEngine.Reflection
 					{
 						// Prefix label and option by component type for clear distinction.
 
-						var prefixedOption = componentOption;
-						prefixedOption.value = string.Format("{0}.{1}", componentType.Name, componentOption.value);
-						prefixedOption.label = string.Format("{0}/{1}", componentType.Name, componentOption.label);
-						options.Add(prefixedOption);
+						componentOption.value = string.Format("{0}.{1}", componentType.Name, componentOption.value);
+						componentOption.label = string.Format("{0}/{1}", componentType.Name, componentOption.label);
+
+						options.Add(componentOption);
 					}
 				}
 
@@ -244,15 +126,18 @@ namespace UnityEngine.Reflection
 				// If a component is specified, the current member is on that component.
 				// Adapt the prefixes to match our hidden values defined earlier.
 
-				if (string.IsNullOrEmpty(componentProperty.stringValue))
+				if (!string.IsNullOrEmpty(nameProperty.stringValue))
 				{
-					selectedOption.value = nameProperty.stringValue;
-					selectedOption.label = string.Format("GameObject.{0}", nameProperty.stringValue);
-				}
-				else
-				{
-					selectedOption.value = string.Format("{0}.{1}", componentProperty.stringValue, nameProperty.stringValue);
-					selectedOption.label = selectedOption.value;
+					if (string.IsNullOrEmpty(componentProperty.stringValue))
+					{
+						string value = nameProperty.stringValue;
+						string label = string.Format("GameObject.{0}", nameProperty.stringValue);
+						selectedOption = new PopupOption<string>(value, label);
+					}
+					else
+					{
+						selectedOption = new PopupOption<string>(string.Format("{0}.{1}", componentProperty.stringValue, nameProperty.stringValue));
+					}
 				}
 			}
 			else if (targetType == UnityObjectType.ScriptableObject)
@@ -271,73 +156,28 @@ namespace UnityEngine.Reflection
 					// Since the component property is ignored on ScriptableObjects,
 					// it should always be equal to the name property.
 
-					selectedOption.value = nameProperty.stringValue;
-					selectedOption.label = selectedOption.value;
+					if (!string.IsNullOrEmpty(nameProperty.stringValue))
+					{
+						selectedOption = new PopupOption<string>(nameProperty.stringValue);
+					}
 				}
 			}
 
-			// Special Options
-			// Display the two special options: one for no member (null), and
-			// one to indicate properties have multiple different values without actually
-			// changing them.
-
-			var noneOption = new PopupOption<string>(null, string.Format("No {0}", memberLabel));
-
-			bool hasOptions = options.Count > 0;
-
-			if (componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues)
-			{
-				options.Insert(0, noneOption);
-				options.Insert(1, PopupOption<string>.separator);
-				options.Insert(2, PopupOption<string>.multiple);
-
-				if (hasOptions)
-				{
-					options.Insert(3, PopupOption<string>.separator);
-				}
-
-				selectedOption = PopupOption<string>.multiple;
-			}
-			else
-			{
-				options.Insert(0, noneOption);
-
-				if (hasOptions)
-				{
-					options.Insert(1, PopupOption<string>.separator);
-				}
-			}
-
-			// Options Popup
-			// Display the options popup with the current option choice.
-			// If no target object is found, render it as disabled.
-
-			int selectedIndex = Mathf.Max(0, options.FindIndex(option => option.value == selectedOption.value));
-
-			string[] optionLabels = options.Select(option => option.label).ToArray();
-
-			if (targetType == UnityObjectType.None) EditorGUI.BeginDisabledGroup(true);
-
-			int newIndex = EditorGUI.Popup
+			PopupGUI<string>.Render
 			(
-				memberPosition,
-				selectedIndex,
-				optionLabels
+				UpdateMember,
+				position, 
+				options, 
+				selectedOption, 
+				componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues, 
+				string.Format("No {0}", memberLabel),
+				targetType != UnityObjectType.None
 			);
+		}
 
-			if (targetType == UnityObjectType.None) EditorGUI.EndDisabledGroup();
-
-			string newValue = options[newIndex].value;
-
-			// Apply Changes
-
-			if (newValue == PopupOption<string>.multiple.value)
-			{
-				// Multiple Values
-				// Nothing to do, as we don't want to actually affect the properties.
-				// Leave them as they are.
-			}
-			else if (newValue == null)
+		protected void UpdateMember(string value)
+		{
+			if (value == null)
 			{
 				// No Value
 				// Set the properties to null.
@@ -352,9 +192,9 @@ namespace UnityEngine.Reflection
 				// it refers to a component and a name. Otherwise, it only refers
 				// to a name.
 
-				if (newValue.Contains('.'))
+				if (value.Contains('.'))
 				{
-					string[] newOptionParts = newValue.Split('.');
+					string[] newOptionParts = value.Split('.');
 
 					componentProperty.stringValue = newOptionParts[0];
 					nameProperty.stringValue = newOptionParts[1];
@@ -362,7 +202,7 @@ namespace UnityEngine.Reflection
 				else
 				{
 					componentProperty.stringValue = null;
-					nameProperty.stringValue = newValue;
+					nameProperty.stringValue = value;
 				}
 			}
 			else if (targetType == UnityObjectType.ScriptableObject)
@@ -372,13 +212,10 @@ namespace UnityEngine.Reflection
 				// set the name property to the new value.
 
 				componentProperty.stringValue = null;
-				nameProperty.stringValue = newValue;
+				nameProperty.stringValue = value;
 			}
 
-			// Restore the indent level
-			EditorGUI.indentLevel = oldIndent;
-
-			EditorGUI.EndProperty();
+			property.serializedObject.ApplyModifiedProperties();
 		}
 
 		#region Targeting
@@ -482,8 +319,7 @@ namespace UnityEngine.Reflection
 			var childrenComponents = targets.OfType<GameObject>().Select(gameObject => gameObject.GetComponents<Component>());
 			var siblingComponents = targets.OfType<Component>().Select(component => component.GetComponents<Component>());
 
-			return childrenComponents
-				.Concat(siblingComponents)
+			return childrenComponents.Concat(siblingComponents)
 				.Select(components => components.Select(component => component.GetType()))
 				.IntersectAll()
 				.Distinct();
@@ -518,13 +354,14 @@ namespace UnityEngine.Reflection
 		{
 			var options = new List<PopupOption<string>>();
 
-			var memberNames = new List<string>(); ;
-
-			foreach (MemberInfo member in
-				type
+			var members = type
 				.GetMembers(validBindingFlags)
 				.Where(member => validMemberTypes.HasFlag(member.MemberType))
-				.Where(ValidateMember))
+				.Where(ValidateMember);
+
+			var memberNames = new List<string>();
+
+			foreach (MemberInfo member in members)
 			{
 				if (memberNames.Contains(member.Name))
 				{

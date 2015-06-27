@@ -56,6 +56,40 @@ namespace UnityEngine.Reflection
 		/// </summary>
 		protected Object reflectionTarget { get; private set; }
 
+		#region Constructors
+
+		public UnityMember() { }
+
+		public UnityMember(string name)
+		{
+			this.name = name;
+		}
+
+		public UnityMember(string name, Object target)
+		{
+			this.name = name;
+			this.target = target;
+
+			Reflect();
+		}
+
+		public UnityMember(string component, string name)
+		{
+			this.component = component;
+			this.name = name;
+		}
+
+		public UnityMember(string component, string name, Object target)
+		{
+			this.component = component;
+			this.name = name;
+			this.target = target;
+
+			Reflect();
+		}
+
+		#endregion
+
 		/// <summary>
 		/// Gathers and caches the reflection target for the member.
 		/// </summary>
@@ -63,7 +97,7 @@ namespace UnityEngine.Reflection
 		{
 			if (target == null)
 			{
-				throw new NullReferenceException("Target cannot be null.");
+				throw new NullReferenceException("Target has not been specified.");
 			}
 
 			GameObject targetAsGameObject = target as GameObject;
@@ -132,7 +166,16 @@ namespace UnityEngine.Reflection
 		public abstract void Reflect();
 
 		/// <summary>
-		/// Gathers the reflection data if it is not present.
+		/// Sets the target, then gathers and caches the reflection data for the member.
+		/// </summary>
+		public void Reflect(Object target)
+		{
+			this.target = target;
+			Reflect();
+		}
+
+		/// <summary>
+		/// Gathers the reflection data if it is not alreadypresent.
 		/// </summary>
 		protected void EnsureReflected()
 		{
@@ -143,7 +186,7 @@ namespace UnityEngine.Reflection
 		}
 
 		/// <summary>
-		/// Gathers the reflection target if it is not present.
+		/// Gathers the reflection target if it is not already present.
 		/// </summary>
 		protected void EnsureTargeted()
 		{

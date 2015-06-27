@@ -2,23 +2,24 @@
 
 A set of Unity classes and their inspector drawers that provide easy reflection and decoupling.
 
-This editor extension provides 2 new classes, `UnityVariable` and `UnityMethod`, along with their custom drawers, that behave like Unity's built-in `UnityEvent` for fields, properties and methods reflection.
+This editor extension provides 3 new classes, `UnityVariable`, `UnityMethod` and `AnimatorParameter`, along with their custom drawers, that behave like Unity's built-in `UnityEvent` for fields, properties, methods and animator parameters reflection.
 
 With them, you can easily refer to members of `Unity.Object` classes directly in the inspector and use them in scripting later. This allows for quick prototyping and decoupling for complex games and applications (albeit at a small performance cost).
 
 ### Say what?
 
-Ugh. Here's a picture:
+It's easier to explain it with pictures:
 
 ![Steps](http://i.imgur.com/Tltom7f.png)
 
-And another:
+Inspector view:
 
 ![Inspector](http://i.imgur.com/DANkdON.png)
 
 ### Features
 
-- Inspect fields, properties or methods
+- Inspect fields, properties and methods
+- *New:* Inspect animator parameters
 - Serialized for persistency across reloads
 - Works on GameObjects and ScriptableObjects
 - Multi-object editing
@@ -37,9 +38,9 @@ Import the `Assets/Reflection` folder in your project and you're good to go!
 
 1. Create a behaviour script
 2. Add `using UnityEngine.Reflection;` to your namespaces.
-2. Use `UnityVariable` or `UnityMethod` as public behaviour members
+2. Add a `UnityVariable` or `UnityMethod` as a public member
 3. Set your bindings in the inspector
-4. Access the variables directly from your script!
+4. Access the variables and methods directly from your script!
 
 Here's a simple example that will display the value of any method and any variable on start:
 ```csharp
@@ -65,7 +66,7 @@ There are 3 commonly used methods to deal with reflected members. Each are descr
 
 `Get` and `Invoke` also have typed generic equivalents that will attempt a cast.
 
-#### UnityVariable.Get
+##### UnityVariable.Get
 
 ```csharp
 object UnityVariable.Get()
@@ -73,7 +74,7 @@ object UnityVariable.Get()
 
 Retrieves the value of the variable.
 
-#### UnityVariable.Set
+##### UnityVariable.Set
 
 ```csharp
 void UnityVariable.Set(object value)
@@ -81,7 +82,7 @@ void UnityVariable.Set(object value)
 
 Assigns a new value to the variable.
 
-#### UnityMethod.Invoke
+##### UnityMethod.Invoke
 
 ```csharp
 object UnityMethod.Invoke(params object[] args)
@@ -93,15 +94,15 @@ Invokes the method with any number of arguments of any type and returns its retu
 
 You can also get the type of the reflected member using the following shortcuts:
 
-#### UnityVariable.variableType
+##### UnityVariable.variableType
 
 ```csharp
-Type UnityVariable.variableType { get; }
+Type UnityVariable.type { get; }
 ```
 
 The field or property type of the reflected variable.
 
-#### UnityMethod.returnType
+##### UnityMethod.returnType
 
 ```csharp
 Type UnityMethod.returnType { get; }
@@ -238,11 +239,41 @@ namespace UnityEngine.Reflection
 }
 ```
 
+#### Creating from script
+
+You can create and modify `UnityMember`s directly from script, if you need to:
+
+```csharp
+using UnityEngine;
+using UnityEngine.Reflection;
+
+public class ScriptExample : MonoBehaviour
+{
+	public UnityVariable inspectorVariable;
+
+	void Start()
+	{
+		// Print the transform's position
+		var variable = new UnityVariable("Transform", "position", gameObject);
+		Debug.Log(variable.Get());
+
+		// Call SetActive directly on the GameObject
+		var method = new UnityMethod("SetActive", gameObject);
+		method.Invoke(false);
+
+		// Modify a variable assigned from the inspector
+		inspectorVariable.component = "Transform";
+		inspectorVariable.name = "rotation";
+		Debug.Log(variable.Get());
+	}
+}
+```
+
 ### Direct Access
 
 If you want to directly access the `System.Reflection` objects, you can do so using the following properties. Note that you must previously have reflected the member, either manually via `UnityMember.Reflect()`, or automatically by accessing / invoking it.
 
-#### UnityVariable.fieldInfo
+##### UnityVariable.fieldInfo
 
 ```csharp
 FieldInfo UnityVariable.fieldInfo { get; }
@@ -250,7 +281,7 @@ FieldInfo UnityVariable.fieldInfo { get; }
 
 The underlying reflected field, or null if the variable is a property.
 
-#### UnityVariable.propertyInfo
+##### UnityVariable.propertyInfo
 
 ```csharp
 PropertyInfo UnityVariable.propertyInfo { get; }
@@ -258,13 +289,82 @@ PropertyInfo UnityVariable.propertyInfo { get; }
 
 The underlying reflected property, or null if the variable is a field.
 
-#### UnityMethod.methodInfo
+##### UnityMethod.methodInfo
 
 ```csharp
 MethodInfo UnityVariable.methodInfo { get; }
 ```
 
 The underlying reflected method.
+
+### New: Animator Parameters
+You can "reflect" animator parameters with the `AnimatorParameter` class. It supports the `SelfTargeted` attribute, but not the `Filter` attribute. Example:
+
+```csharp
+using UnityEngine;
+using UnityEngine.Reflection;
+
+public class AnimatorExample : MonoBehaviour
+{
+	public AnimatorParameter speedParameter;
+
+	void Start()
+	{
+		speedParameter.Set(5);
+	}
+}
+```
+
+The following methods and properties are available:
+
+##### AnimatorParameter.Get
+
+```csharp
+object AnimatorParameter.Get()
+```
+
+Retrieves the value of the parameter.
+
+##### AnimatorParameter.Set
+
+```csharp
+void AnimatorParameter.Set(object value)
+```
+
+Assigns a new value to the parameter.
+
+##### AnimatorParameter.SetTrigger
+
+```csharp
+void AnimatorParameter.SetTrigger()
+```
+
+Triggers the parameter.
+
+##### AnimatorParameter.ResetTrigger
+
+```csharp
+void AnimatorParameter.ResetTrigger()
+```
+
+Resets the trigger on the parameter.
+
+##### AnimatorParameter.type
+
+```csharp
+Type AnimatorParameter.type { get; }
+```
+
+The type of the parameter, or null if it is a trigger.
+
+##### AnimatorParameter.parameterInfo
+
+```csharp
+AnimatorControllerParameter AnimatorParameter.parameterInfo { get; }
+```
+
+The underlying animator controller parameter.
+
 
 ## Contributing
 
@@ -273,10 +373,9 @@ I'll happily accept pull requests if you have improvements or fixes to suggest.
 ### To-do
 
 - Method overloading (requires method signature distinction and serialization)
-- Figure out a way to make the member dropdown less verbose (like `UnityEvent`'s)
 
 ##  License
 
 The whole source is under MIT License, which basically means you can freely use and redistribute it in your commercial and non-commercial projects. See [the license file](LICENSE) for the boring details.
 
-If you use it in a plugin that you redistribute, please the namespaces to avoid version conflicts with your users. For example, change `UnityEngine.Reflection` to `MyPlugin.UnityEngine.Reflection`.
+If you use it in a plugin that you redistribute, please add a sub-namespace to avoid version conflicts with your users. For example, change `UnityEngine.Reflection` to `UnityEngine.Reflection.MyPlugin`. Changing the namespace completely (e.g. `MyPluginReflection`) will cause some using errors, so do use a sub-namespace instead.

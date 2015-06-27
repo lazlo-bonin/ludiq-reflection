@@ -15,6 +15,16 @@ namespace UnityEngine.Reflection
 		/// The underlying property field, or null if the variable is a field.
 		/// </summary>
 		public PropertyInfo propertyInfo { get; private set; }
+		
+		#region Constructors
+
+		public UnityVariable() { }
+		public UnityVariable(string name) : base(name) { }
+		public UnityVariable(string name, Object target) : base(name, target) { }
+		public UnityVariable(string component, string name) : base(component, name) { }
+		public UnityVariable(string component, string name, Object target) : base(component, name, target) { }
+
+		#endregion
 
 		/// <inheritdoc />
 		public override void Reflect()
@@ -89,9 +99,9 @@ namespace UnityEngine.Reflection
 		}
 
 		/// <summary>
-		/// The field or property type of the reflected variable.
+		/// The type of the reflected field or property.
 		/// </summary>
-		public Type variableType
+		public Type type
 		{
 			get
 			{

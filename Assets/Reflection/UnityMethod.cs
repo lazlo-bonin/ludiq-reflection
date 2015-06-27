@@ -11,6 +11,16 @@ namespace UnityEngine.Reflection
 		/// The underlying reflected method.
 		/// </summary>
 		public MethodInfo methodInfo { get; private set; }
+		
+		#region Constructors
+
+		public UnityMethod() { }
+		public UnityMethod(string name) : base(name) { }
+		public UnityMethod(string name, Object target) : base(name, target) { }
+		public UnityMethod(string component, string name) : base(component, name) { }
+		public UnityMethod(string component, string name, Object target) : base(component, name, target) { }
+
+		#endregion
 
 		/// <inheritdoc />
 		public override void Reflect()

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	/// <summary>
 	/// Indicates that the UnityMember has itself as a target.

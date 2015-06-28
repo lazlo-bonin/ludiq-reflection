@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Reflection;
+using UnityObject = UnityEngine.Object;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[Serializable]
 	public class UnityVariable : UnityMember
@@ -20,9 +21,9 @@ namespace UnityEngine.Reflection
 
 		public UnityVariable() { }
 		public UnityVariable(string name) : base(name) { }
-		public UnityVariable(string name, Object target) : base(name, target) { }
+		public UnityVariable(string name, UnityObject target) : base(name, target) { }
 		public UnityVariable(string component, string name) : base(component, name) { }
-		public UnityVariable(string component, string name, Object target) : base(component, name, target) { }
+		public UnityVariable(string component, string name, UnityObject target) : base(component, name, target) { }
 
 		#endregion
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	public static class Extensions
 	{

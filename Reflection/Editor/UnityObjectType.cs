@@ -1,4 +1,4 @@
-﻿namespace UnityEngine.Reflection
+﻿namespace Ludiq.Reflection
 {
 	/// <summary>
 	/// A simplified representation of the type of a UnityEngine.Object.

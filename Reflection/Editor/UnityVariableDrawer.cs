@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using UnityEditor;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[CustomPropertyDrawer(typeof(UnityVariable))]
 	public class UnityVariableDrawer : UnityMemberDrawer

@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEngine;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	public abstract class TargetedDrawer : PropertyDrawer
 	{

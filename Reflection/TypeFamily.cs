@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	/// <summary>
 	/// A simple representation of different groups of .NET types.

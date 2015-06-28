@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[Serializable]
 	public class UnityMethod : UnityMember
@@ -16,9 +18,9 @@ namespace UnityEngine.Reflection
 
 		public UnityMethod() { }
 		public UnityMethod(string name) : base(name) { }
-		public UnityMethod(string name, Object target) : base(name, target) { }
+		public UnityMethod(string name, UnityObject target) : base(name, target) { }
 		public UnityMethod(string component, string name) : base(component, name) { }
-		public UnityMethod(string component, string name, Object target) : base(component, name, target) { }
+		public UnityMethod(string component, string name, UnityObject target) : base(component, name, target) { }
 
 		#endregion
 

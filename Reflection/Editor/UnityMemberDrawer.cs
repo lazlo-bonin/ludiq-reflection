@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[CustomPropertyDrawer(typeof(UnityMember))]
 	public abstract class UnityMemberDrawer : TargetedDrawer
@@ -34,7 +36,7 @@ namespace UnityEngine.Reflection
 		/// <summary>
 		/// The targeted Unity Objects.
 		/// </summary>
-		protected Object[] targets;
+		protected UnityObject[] targets;
 
 		/// <summary>
 		/// The type of targeted objects.
@@ -228,7 +230,7 @@ namespace UnityEngine.Reflection
 		/// <summary>
 		/// Get the list of targets on the inspected objects.
 		/// </summary>
-		protected Object[] FindTargets()
+		protected UnityObject[] FindTargets()
 		{
 			if (isSelfTargeted)
 			{
@@ -251,7 +253,7 @@ namespace UnityEngine.Reflection
 		{
 			UnityObjectType unityObjectType = UnityObjectType.None;
 
-			foreach (Object targetObject in targets)
+			foreach (UnityObject targetObject in targets)
 			{
 				// Null (non-specified) targets don't affect the type
 				// If no non-null target is specified, the type will be None

@@ -1,14 +1,7 @@
-Library/
-Temp/
-Obj/
-Build/
-ProjectSettings/
-
-Assets/*
-!Assets/Reflection.meta
-!Assets/Reflection/
-!Assets/Reflection/*
-!Assets/Reflection/**/*
+*
+!Reflection/
+!Reflection/*
+!Reflection/**/*
 
 *.csproj
 *.unityproj

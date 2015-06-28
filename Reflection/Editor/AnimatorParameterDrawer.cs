@@ -2,8 +2,10 @@
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[CustomPropertyDrawer(typeof(AnimatorParameter))]
 	public class AnimatorParameterDrawer : TargetedDrawer

@@ -2,7 +2,7 @@
 using System.Collections;
 using System;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[Serializable]
 	public class AnimatorParameter

@@ -1,16 +1,18 @@
 ﻿using System;
+using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[Serializable]
 	public abstract class UnityMember
 	{
 		[SerializeField]
-		private Object _target;
+		private UnityObject _target;
 		/// <summary>
 		/// The object containing the member.
 		/// </summary>
-		public Object target
+		public UnityObject target
 		{
 			get { return _target; }
 			set { _target = value; isTargeted = false; isReflected = false; }
@@ -54,7 +56,7 @@ namespace UnityEngine.Reflection
 		/// For ScriptableObjects targets, this is the object itself. 
 		/// Other Unity Objects are not supported.
 		/// </summary>
-		protected Object reflectionTarget { get; private set; }
+		protected UnityObject reflectionTarget { get; private set; }
 
 		#region Constructors
 
@@ -65,7 +67,7 @@ namespace UnityEngine.Reflection
 			this.name = name;
 		}
 
-		public UnityMember(string name, Object target)
+		public UnityMember(string name, UnityObject target)
 		{
 			this.name = name;
 			this.target = target;
@@ -79,7 +81,7 @@ namespace UnityEngine.Reflection
 			this.name = name;
 		}
 
-		public UnityMember(string component, string name, Object target)
+		public UnityMember(string component, string name, UnityObject target)
 		{
 			this.component = component;
 			this.name = name;
@@ -168,7 +170,7 @@ namespace UnityEngine.Reflection
 		/// <summary>
 		/// Sets the target, then gathers and caches the reflection data for the member.
 		/// </summary>
-		public void Reflect(Object target)
+		public void Reflect(UnityObject target)
 		{
 			this.target = target;
 			Reflect();

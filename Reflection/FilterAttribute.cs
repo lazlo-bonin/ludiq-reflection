@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	/// <summary>
 	/// Filters the list of members displayed in the inspector drawer.

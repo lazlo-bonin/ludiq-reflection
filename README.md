@@ -1,4 +1,4 @@
-# UnityEngine.Reflection
+# Ludiq.Reflection
 
 A set of Unity classes and their inspector drawers that provide easy reflection and decoupling.
 
@@ -37,7 +37,7 @@ Import the `Assets/Reflection` folder in your project and you're good to go!
 ## Usage
 
 1. Create a behaviour script
-2. Add `using UnityEngine.Reflection;` to your namespaces.
+2. Add `using Ludiq.Reflection;` to your namespaces.
 2. Add a `UnityVariable` or `UnityMethod` as a public member
 3. Set your bindings in the inspector
 4. Access the variables and methods directly from your script!
@@ -45,7 +45,7 @@ Import the `Assets/Reflection` folder in your project and you're good to go!
 Here's a simple example that will display the value of any method and any variable on start:
 ```csharp
 using UnityEngine;
-using UnityEngine.Reflection;
+using Ludiq.Reflection;
 
 public class BasicExample : MonoBehaviour
 {
@@ -118,7 +118,7 @@ You can tell the inspector to look on the current object instead of manually spe
 
 ```csharp
 using UnityEngine;
-using UnityEngine.Reflection;
+using Ludiq.Reflection;
 
 public class AdvancedExample : MonoBehaviour
 {
@@ -133,7 +133,7 @@ You can specify which members will appear in the inspector using the `Filter` at
 
 ```csharp
 using UnityEngine;
-using UnityEngine.Reflection;
+using Ludiq.Reflection;
 
 public class AdvancedExample : MonoBehaviour
 {
@@ -219,7 +219,7 @@ For example, if you wanted to make non-public variables show up by default (with
 using System.Reflection;
 using UnityEditor;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	[CustomPropertyDrawer(typeof(UnityVariable))]
 	public class UnityVariableDrawer : UnityMemberDrawer
@@ -245,7 +245,7 @@ You can create and modify `UnityMember`s directly from script, if you need to:
 
 ```csharp
 using UnityEngine;
-using UnityEngine.Reflection;
+using Ludiq.Reflection;
 
 public class ScriptExample : MonoBehaviour
 {
@@ -302,7 +302,7 @@ You can "reflect" animator parameters with the `AnimatorParameter` class. It sup
 
 ```csharp
 using UnityEngine;
-using UnityEngine.Reflection;
+using Ludiq.Reflection;
 
 public class AnimatorExample : MonoBehaviour
 {
@@ -365,7 +365,6 @@ AnimatorControllerParameter AnimatorParameter.parameterInfo { get; }
 
 The underlying animator controller parameter.
 
-
 ## Contributing
 
 I'll happily accept pull requests if you have improvements or fixes to suggest.
@@ -376,6 +375,6 @@ I'll happily accept pull requests if you have improvements or fixes to suggest.
 
 ##  License
 
-The whole source is under MIT License, which basically means you can freely use and redistribute it in your commercial and non-commercial projects. See [the license file](LICENSE) for the boring details.
+The whole source is under MIT License, which basically means you can freely use and redistribute it in your commercial and non-commercial projects. See [the license file](LICENSE) for the boring details. You must keep the license file and copyright notice in copies of the library.
 
-If you use it in a plugin that you redistribute, please add a sub-namespace to avoid version conflicts with your users. For example, change `UnityEngine.Reflection` to `UnityEngine.Reflection.MyPlugin`. Changing the namespace completely (e.g. `MyPluginReflection`) will cause some using errors, so do use a sub-namespace instead.
+If you use it in a plugin that you redistribute, please change the namespace to avoid version conflicts with your users. For example, change `Ludiq.Reflection` to `MyPlugin.Reflection`.

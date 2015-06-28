@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UnityEngine.Reflection
+namespace Ludiq.Reflection
 {
 	public static class Extensions
 	{

@@ -163,9 +163,12 @@ namespace UnityEngine.Reflection
 				}
 			}
 
+			// Make sure the callback uses the property of this drawer, not at its later value.
+			var propertyNow = property;
+
 			PopupGUI<string>.Render
 			(
-				UpdateMember,
+				value => UpdateMember(propertyNow, value),
 				position, 
 				options, 
 				selectedOption, 
@@ -175,8 +178,10 @@ namespace UnityEngine.Reflection
 			);
 		}
 
-		protected void UpdateMember(string value)
+		protected void UpdateMember(SerializedProperty property, string value)
 		{
+			Update(property);
+
 			if (value == null)
 			{
 				// No Value

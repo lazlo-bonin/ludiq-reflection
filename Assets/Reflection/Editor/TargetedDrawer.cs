@@ -57,7 +57,7 @@ namespace UnityEngine.Reflection
 			// Double the height and add the padding for self-targeting, 
 			// because we'll display the controls on another line.
 
-			if (isSelfTargeted)
+			if (isSelfTargeted || string.IsNullOrEmpty(label.text))
 			{
 				return base.GetPropertyHeight(property, label);
 			}
@@ -96,8 +96,11 @@ namespace UnityEngine.Reflection
 			}
 			else
 			{
-				position.height = base.GetPropertyHeight(property, label);
-				position.y += EditorGUI.PrefixLabel(position, label).height + LabelPadding;
+				if (!string.IsNullOrEmpty(label.text))
+				{
+					position.height = base.GetPropertyHeight(property, label);
+					position.y += EditorGUI.PrefixLabel(position, label).height + LabelPadding;
+				}
 
 				targetPosition = position;
 				memberPosition = position;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ludiq.Controls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -168,16 +169,21 @@ namespace Ludiq.Reflection
 			// Make sure the callback uses the property of this drawer, not at its later value.
 			var propertyNow = property;
 
+			bool enabled = targetType != UnityObjectType.None;
+
+			if (!enabled) EditorGUI.BeginDisabledGroup(true);
+
 			PopupGUI<string>.Render
 			(
+				position,
 				value => UpdateMember(propertyNow, value),
-				position, 
 				options, 
 				selectedOption, 
-				componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues, 
-				string.Format("No {0}", memberLabel),
-				targetType != UnityObjectType.None
+				new PopupOption<string>(null, string.Format("No {0}", memberLabel)),
+				componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues
 			);
+
+			if (!enabled) EditorGUI.EndDisabledGroup();
 		}
 
 		protected void UpdateMember(SerializedProperty property, string value)

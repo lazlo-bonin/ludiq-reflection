@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Ludiq.Controls;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -49,7 +50,7 @@ namespace Ludiq.Reflection
 			var options = GetNameOptions();
 
 			PopupOption<string> selectedOption = null;
-			
+
 			if (!string.IsNullOrEmpty(nameProperty.stringValue))
 			{
 				selectedOption = new PopupOption<string>(nameProperty.stringValue);
@@ -58,15 +59,21 @@ namespace Ludiq.Reflection
 			// Make sure the callback uses the property of this drawer, not at its later value.
 			var propertyNow = property;
 
+			bool enabled = targets.Any(target => target != null);
+
+			if (!enabled) EditorGUI.BeginDisabledGroup(true);
+
 			PopupGUI<string>.Render
 			(
-				value => UpdateMember(propertyNow, value), 
-				position, options, 
-				selectedOption, 
-				nameProperty.hasMultipleDifferentValues, 
-				"No Parameter",
-				targets.Any(target => target != null)
+				position,
+				value => UpdateMember(propertyNow, value),
+				options,
+				selectedOption,
+				new PopupOption<string>(null, "No Parameter"),
+				nameProperty.hasMultipleDifferentValues
 			);
+
+			if (!enabled) EditorGUI.EndDisabledGroup();
 		}
 
 		protected void UpdateMember(SerializedProperty property, string value)

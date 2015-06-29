@@ -32,7 +32,10 @@ Inspector view:
 
 ## Installation
 
-Import the `Assets/Reflection` folder in your project and you're good to go!
+1. Install [Ludiq.Controls](https://github.com/lazlo-bonin/unity-controls/)
+2. Import the `Reflection` folder in your project
+
+You're good to go!
 
 ## Usage
 

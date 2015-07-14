@@ -78,6 +78,8 @@ namespace Ludiq.Reflection
 
 		protected void UpdateMember(SerializedProperty property, string value)
 		{
+			Update(property);
+
 			nameProperty.stringValue = value;
 
 			property.serializedObject.ApplyModifiedProperties();

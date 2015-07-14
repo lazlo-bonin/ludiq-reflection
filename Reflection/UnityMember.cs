@@ -51,6 +51,17 @@ namespace Ludiq.Reflection
 		public bool isReflected { get; protected set; }
 
 		/// <summary>
+		/// Indicates whether the member has been properly assigned.
+		/// </summary>
+		public bool isAssigned
+		{
+			get
+			{
+				return !string.IsNullOrEmpty(name);
+			}
+		}
+
+		/// <summary>
 		/// The object on which to perform reflection.
 		/// For GameObjects and Component targets, this is the component of type <see cref="UnityMember.component"/> or the object itself if null.
 		/// For ScriptableObjects targets, this is the object itself. 

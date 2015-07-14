@@ -30,6 +30,11 @@ namespace Ludiq.Reflection
 		/// <inheritdoc />
 		public override void Reflect()
 		{
+			if (!isAssigned)
+			{
+				throw new Exception("Field or property name not specified.");
+			}
+
 			EnsureTargeted();
 
 			Type type = reflectionTarget.GetType();
@@ -40,7 +45,7 @@ namespace Ludiq.Reflection
 
 			if (variables.Length == 0)
 			{
-				throw new Exception(string.Format("No matching field or property found: '{0}.{1}'", type.FullName, name));
+				throw new Exception(string.Format("No matching field or property found: '{0}.{1}'", type.Name, name));
 			}
 
 			MemberInfo variable = variables[0]; // Safe, because there can't possibly be more than one variable of the same name

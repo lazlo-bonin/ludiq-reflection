@@ -27,6 +27,11 @@ namespace Ludiq.Reflection
 		/// <inheritdoc />
 		public override void Reflect()
 		{
+			if (!isAssigned)
+			{
+				throw new Exception("Method name not specified.");
+			}
+
 			EnsureTargeted();
 
 			Type type = reflectionTarget.GetType();
@@ -37,7 +42,7 @@ namespace Ludiq.Reflection
 
 			if (methods.Length == 0)
 			{
-				throw new Exception(string.Format("No matching method found: '{0}.{1}'", type.FullName, name));
+				throw new Exception(string.Format("No matching method found: '{0}.{1}'", type.Name, name));
 			}
 
 			// TODO: Method overloading support.

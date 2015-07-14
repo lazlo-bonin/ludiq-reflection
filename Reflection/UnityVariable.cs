@@ -94,11 +94,13 @@ namespace Ludiq.Reflection
 			if (fieldInfo != null)
 			{
 				fieldInfo.SetValue(reflectionTarget, value);
+				return;
 			}
 
 			if (propertyInfo != null)
 			{
 				propertyInfo.SetValue(reflectionTarget, value, null);
+				return;
 			}
 
 			throw new InvalidOperationException();

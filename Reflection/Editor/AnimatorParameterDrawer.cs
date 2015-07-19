@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using UnityObject = UnityEngine.Object;
 
 namespace Ludiq.Reflection
 {
@@ -49,11 +48,14 @@ namespace Ludiq.Reflection
 		{
 			var options = GetNameOptions();
 
-			PopupOption<string> selectedOption = null;
+			PopupOption<AnimatorParameter> selectedOption = null;
+			PopupOption<AnimatorParameter> noneOption = new PopupOption<AnimatorParameter>(null, "No Parameter");
 
 			if (!string.IsNullOrEmpty(nameProperty.stringValue))
 			{
-				selectedOption = new PopupOption<string>(nameProperty.stringValue);
+				AnimatorParameter value = GetValue();
+				string label = value.name;
+				selectedOption = new PopupOption<AnimatorParameter>(value, label);
 			}
 
 			// Make sure the callback uses the property of this drawer, not at its later value.
@@ -63,30 +65,56 @@ namespace Ludiq.Reflection
 
 			if (!enabled) EditorGUI.BeginDisabledGroup(true);
 
-			PopupGUI<string>.Render
+			PopupGUI<AnimatorParameter>.Render
 			(
 				position,
-				value => UpdateMember(propertyNow, value),
+				value =>
+				{
+					Update(propertyNow);
+					SetValue(value);
+					propertyNow.serializedObject.ApplyModifiedProperties();
+				},
 				options,
 				selectedOption,
-				new PopupOption<string>(null, "No Parameter"),
+				noneOption,
 				nameProperty.hasMultipleDifferentValues
 			);
 
 			if (!enabled) EditorGUI.EndDisabledGroup();
 		}
 
-		protected void UpdateMember(SerializedProperty property, string value)
+		/// <summary>
+		/// Returns an animator parameter constructed from the current property values.
+		/// </summary>
+		protected AnimatorParameter GetValue()
 		{
-			Update(property);
+			if (nameProperty.hasMultipleDifferentValues || string.IsNullOrEmpty(nameProperty.stringValue))
+			{
+				return null;
+			}
 
-			nameProperty.stringValue = value;
-
-			property.serializedObject.ApplyModifiedProperties();
+			string name = nameProperty.stringValue;
+			if (name == string.Empty) name = null;
+			return new AnimatorParameter(name);
 		}
 
 		/// <summary>
-		/// Get the list of targets on the inspected objects.
+		/// Assigns the property values from a specified animator parameter.
+		/// </summary>
+		protected void SetValue(AnimatorParameter value)
+		{
+			if (value == null)
+			{
+				nameProperty.stringValue = value.name;
+			}
+			else
+			{
+				nameProperty.stringValue = null;
+			}
+		}
+
+		/// <summary>
+		/// Gets the list of targets on the inspected objects.
 		/// </summary>
 		protected Animator[] FindTargets()
 		{
@@ -114,9 +142,9 @@ namespace Ludiq.Reflection
 		/// <summary>
 		/// Gets the list of shared parameter names as popup options.
 		/// </summary>
-		protected List<PopupOption<string>> GetNameOptions()
+		protected List<PopupOption<AnimatorParameter>> GetNameOptions()
 		{
-			var options = new List<PopupOption<string>>();
+			var options = new List<PopupOption<AnimatorParameter>>();
 
 			List<string> names = targets
 				.Select(animator => ((AnimatorController)animator.runtimeAnimatorController))
@@ -129,11 +157,8 @@ namespace Ludiq.Reflection
 
 			foreach (string name in names)
 			{
-				options.Add(new PopupOption<string>(name));
+				options.Add(new PopupOption<AnimatorParameter>(new AnimatorParameter(name), name));
 			}
-
-			// Alphabetic sort: 
-			// options.Sort((o1, o2) => o1.value.CompareTo(o2.value));
 
 			return options;
 		}

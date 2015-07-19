@@ -15,7 +15,6 @@ namespace Ludiq.Reflection
 		public Animator target
 		{
 			get { return _target; }
-			set { _target = value; isLinked = false; }
 		}
 
 		[SerializeField]
@@ -26,7 +25,6 @@ namespace Ludiq.Reflection
 		public string name
 		{
 			get { return _name; }
-			set { _name = value; isLinked = false; }
 		}
 
 		/// <summary>
@@ -43,13 +41,13 @@ namespace Ludiq.Reflection
 
 		public AnimatorParameter(string name)
 		{
-			this.name = name;
+			_name = name;
 		}
 
 		public AnimatorParameter(string name, Animator target)
 		{
-			this.name = name;
-			this.target = target;
+			_name = name;
+			_target = target;
 
 			Link();
 		}
@@ -74,15 +72,6 @@ namespace Ludiq.Reflection
 			}
 
 			throw new UnityException(string.Format("Animator parameter not found: '{0}'.", name));
-		}
-
-		/// <summary>
-		/// Sets the target, fetches and caches the parameter.
-		/// </summary>
-		public void Link(Animator target)
-		{
-			this.target = target;
-			Link();
 		}
 
 		/// <summary>

@@ -1,8 +1,8 @@
-﻿using Ludiq.Controls;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ludiq.Controls;
 using UnityEditor;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
@@ -10,7 +10,7 @@ using UnityObject = UnityEngine.Object;
 namespace Ludiq.Reflection
 {
 	[CustomPropertyDrawer(typeof(UnityMember))]
-	public abstract class UnityMemberDrawer : TargetedDrawer
+	public abstract class UnityMemberDrawer<TMember> : TargetedDrawer where TMember : UnityMember
 	{
 		#region Fields
 
@@ -80,12 +80,10 @@ namespace Ludiq.Reflection
 
 			// Display a list of all available reflected members in a popup.
 
-			var options = new List<PopupOption<string>>();
+			var options = new List<PopupOption<TMember>>();
 
-			// The selected option
-			// TODO: Figure out a way to display the label instead of the popup selection
-			// Forum: http://forum.unity3d.com/threads/336305/
-			PopupOption<string> selectedOption = null;
+			PopupOption<TMember> selectedOption = null;
+			PopupOption<TMember> noneOption = new PopupOption<TMember>(null, string.Format("No {0}", memberLabel));
 
 			if (targetType == UnityObjectType.GameObject)
 			{
@@ -111,13 +109,12 @@ namespace Ludiq.Reflection
 
 				foreach (Type componentType in GetSharedComponentTypes())
 				{
-					var componentOptions = GetMemberOptions(componentType);
+					var componentOptions = GetMemberOptions(componentType, componentType.Name);
 
 					foreach (var componentOption in componentOptions)
 					{
 						// Prefix label and option by component type for clear distinction.
 
-						componentOption.value = string.Format("{0}.{1}", componentType.Name, componentOption.value);
 						componentOption.label = string.Format("{0}/{1}", componentType.Name, componentOption.label);
 
 						options.Add(componentOption);
@@ -125,22 +122,23 @@ namespace Ludiq.Reflection
 				}
 
 				// Determine which option is currently selected.
-				// If no component is specified, the current member is directly on the GameObject.
-				// If a component is specified, the current member is on that component.
-				// Adapt the prefixes to match our hidden values defined earlier.
 
-				if (!string.IsNullOrEmpty(nameProperty.stringValue))
+				TMember value = GetValue();
+
+				if (value != null)
 				{
-					if (string.IsNullOrEmpty(componentProperty.stringValue))
+					string label;
+
+					if (value.component == null)
 					{
-						string value = nameProperty.stringValue;
-						string label = string.Format("GameObject.{0}", nameProperty.stringValue);
-						selectedOption = new PopupOption<string>(value, label);
+						label = string.Format("GameObject.{0}", value.name);
 					}
 					else
 					{
-						selectedOption = new PopupOption<string>(string.Format("{0}.{1}", componentProperty.stringValue, nameProperty.stringValue));
+						label = string.Format("{0}.{1}", value.component, value.name);
 					}
+
+					selectedOption = new PopupOption<TMember>(value, label);
 				}
 			}
 			else if (targetType == UnityObjectType.ScriptableObject)
@@ -156,12 +154,12 @@ namespace Ludiq.Reflection
 					options.AddRange(GetMemberOptions(scriptableObjectType));
 
 					// Determine which option is currently selected.
-					// Since the component property is ignored on ScriptableObjects,
-					// it should always be equal to the name property.
 
-					if (!string.IsNullOrEmpty(nameProperty.stringValue))
+					TMember value = GetValue();
+
+					if (value != null)
 					{
-						selectedOption = new PopupOption<string>(nameProperty.stringValue);
+						selectedOption = new PopupOption<TMember>(value, value.name);
 					}
 				}
 			}
@@ -173,63 +171,81 @@ namespace Ludiq.Reflection
 
 			if (!enabled) EditorGUI.BeginDisabledGroup(true);
 
-			PopupGUI<string>.Render
+			PopupGUI<TMember>.Render
 			(
 				position,
-				value => UpdateMember(propertyNow, value),
-				options, 
-				selectedOption, 
-				new PopupOption<string>(null, string.Format("No {0}", memberLabel)),
-				componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues
+				value =>
+				{
+					Update(propertyNow);
+					SetValue(value);
+					propertyNow.serializedObject.ApplyModifiedProperties();
+				},
+				options,
+				selectedOption,
+				noneOption,
+				hasMultipleDifferentValues
 			);
 
 			if (!enabled) EditorGUI.EndDisabledGroup();
 		}
 
-		protected void UpdateMember(SerializedProperty property, string value)
+		#region Value
+
+		/// <summary>
+		/// Constructs a new instance of the member from the specified component and name.
+		/// </summary>
+		protected abstract TMember BuildValue(string component, string name);
+
+		/// <summary>
+		/// Returns a member constructed from the current parameter values.
+		/// </summary>
+		/// <returns></returns>
+		protected TMember GetValue()
 		{
-			Update(property);
-
-			if (value == null)
+			if (hasMultipleDifferentValues ||
+				string.IsNullOrEmpty(nameProperty.stringValue))
 			{
-				// No Value
-				// Set the properties to null.
+				return null;
+			}
 
+			string component = componentProperty.stringValue;
+			string name = nameProperty.stringValue;
+
+			if (component == string.Empty) component = null;
+			if (name == string.Empty) name = null;
+
+			return BuildValue(component, name);
+		}
+
+		/// <summary>
+		/// Assigns the property values from a specified member.
+		/// </summary>
+		protected virtual void SetValue(TMember value)
+		{
+			if (value != null)
+			{
+				componentProperty.stringValue = value.component;
+				nameProperty.stringValue = value.name;
+			}
+			else
+			{
 				componentProperty.stringValue = null;
 				nameProperty.stringValue = null;
 			}
-			else if (targetType == UnityObjectType.GameObject)
-			{
-				// GameObject Target
-				// Check if the new value is in dot-notation, which would indicate
-				// it refers to a component and a name. Otherwise, it only refers
-				// to a name.
-
-				if (value.Contains('.'))
-				{
-					string[] newOptionParts = value.Split('.');
-
-					componentProperty.stringValue = newOptionParts[0];
-					nameProperty.stringValue = newOptionParts[1];
-				}
-				else
-				{
-					componentProperty.stringValue = null;
-					nameProperty.stringValue = value;
-				}
-			}
-			else if (targetType == UnityObjectType.ScriptableObject)
-			{
-				// ScriptableObject Target
-				// The component property is always ignored, therefore only
-				// set the name property to the new value.
-
-				componentProperty.stringValue = null;
-				nameProperty.stringValue = value;
-			}
-
-			property.serializedObject.ApplyModifiedProperties();
 		}
+
+		/// <summary>
+		/// Indicated whether the property has multiple different values.
+		/// </summary>
+		protected virtual bool hasMultipleDifferentValues
+		{
+			get
+			{
+				return componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues;
+			}
+		}
+
+		#endregion
 
 		#region Targeting
 
@@ -274,7 +290,7 @@ namespace Ludiq.Reflection
 				{
 					// For GameObjects and Components, the target is either the
 					// GameObject itself, or the one to which the Component belongs.
-					
+
 					// If a ScriptableObject target was previously found,
 					// return that the targets are of mixed types.
 
@@ -363,50 +379,17 @@ namespace Ludiq.Reflection
 		/// <summary>
 		/// Gets the list of members available on a type as popup options.
 		/// </summary>
-		protected List<PopupOption<string>> GetMemberOptions(Type type)
+		protected List<PopupOption<TMember>> GetMemberOptions(Type type, string component = null)
 		{
-			var options = new List<PopupOption<string>>();
-
-			var members = type
+			return type
 				.GetMembers(validBindingFlags)
 				.Where(member => validMemberTypes.HasFlag(member.MemberType))
-				.Where(ValidateMember);
-
-			var memberNames = new List<string>();
-
-			foreach (MemberInfo member in members)
-			{
-				if (memberNames.Contains(member.Name))
-				{
-					options.RemoveAll(o => o.value == member.Name); // Remove duplicate
-					continue;
-				}
-
-				string value = member.Name;
-				string label = member.Name;
-
-				if (member is FieldInfo)
-				{
-					label = string.Format("{0} {1}", ((FieldInfo)member).FieldType.PrettyName(), member.Name);
-				}
-				else if (member is PropertyInfo)
-				{
-					label = string.Format("{0} {1}", ((PropertyInfo)member).PropertyType.PrettyName(), member.Name);
-				}
-				else if (member is MethodInfo)
-				{
-					label = string.Format("{0} {1} ()", ((MethodInfo)member).ReturnType.PrettyName(), member.Name);
-				}
-
-				options.Add(new PopupOption<string>(value, label));
-				memberNames.Add(member.Name);
-			}
-
-			// Alphabetic sort: 
-			// options.Sort((o1, o2) => o1.value.CompareTo(o2.value));
-
-			return options;
+				.Where(ValidateMember)
+				.Select(member => GetMemberOption(member, component))
+				.ToList();
 		}
+
+		protected abstract PopupOption<TMember> GetMemberOption(MemberInfo member, string component);
 
 		#endregion
 
@@ -490,7 +473,8 @@ namespace Ludiq.Reflection
 			if (families.HasFlag(TypeFamily.Interface)) validFamily |= type.IsInterface;
 			if (families.HasFlag(TypeFamily.Primitive)) validFamily |= type.IsPrimitive;
 			if (families.HasFlag(TypeFamily.Reference)) validFamily |= !type.IsValueType;
-			if (families.HasFlag(TypeFamily.Value)) validFamily |= type.IsValueType && type != typeof(void);
+			if (families.HasFlag(TypeFamily.Value)) validFamily |= (type.IsValueType && type != typeof(void));
+			if (families.HasFlag(TypeFamily.Void)) validFamily |= type == typeof(void);
 
 			// Allow types based on the filter attribute
 			// If no filter types are specified, all types are allowed.

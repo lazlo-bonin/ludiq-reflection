@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using Object = System.Object;
 using UnityObject = UnityEngine.Object;
 
 namespace Ludiq.Reflection
@@ -15,7 +16,6 @@ namespace Ludiq.Reflection
 		public UnityObject target
 		{
 			get { return _target; }
-			set { _target = value; isTargeted = false; isReflected = false; }
 		}
 
 		[SerializeField]
@@ -26,7 +26,6 @@ namespace Ludiq.Reflection
 		public string component
 		{
 			get { return _component; }
-			set { _component = value; isTargeted = false; isReflected = false; }
 		}
 
 		[SerializeField]
@@ -37,7 +36,6 @@ namespace Ludiq.Reflection
 		public string name
 		{
 			get { return _name; }
-			set { _name = value; isReflected = false; }
 		}
 
 		/// <summary>
@@ -75,28 +73,28 @@ namespace Ludiq.Reflection
 
 		public UnityMember(string name)
 		{
-			this.name = name;
+			_name = name;
 		}
 
 		public UnityMember(string name, UnityObject target)
 		{
-			this.name = name;
-			this.target = target;
+			_name = name;
+			_target = target;
 
 			Reflect();
 		}
 
 		public UnityMember(string component, string name)
 		{
-			this.component = component;
-			this.name = name;
+			_component = component;
+			_name = name;
 		}
 
 		public UnityMember(string component, string name, UnityObject target)
 		{
-			this.component = component;
-			this.name = name;
-			this.target = target;
+			_component = component;
+			_name = name;
+			_target = target;
 
 			Reflect();
 		}
@@ -179,15 +177,6 @@ namespace Ludiq.Reflection
 		public abstract void Reflect();
 
 		/// <summary>
-		/// Sets the target, then gathers and caches the reflection data for the member.
-		/// </summary>
-		public void Reflect(UnityObject target)
-		{
-			this.target = target;
-			Reflect();
-		}
-
-		/// <summary>
 		/// Gathers the reflection data if it is not alreadypresent.
 		/// </summary>
 		protected void EnsureReflected()
@@ -208,5 +197,38 @@ namespace Ludiq.Reflection
 				Target();
 			}
 		}
+
+		#region Equality
+
+		public override bool Equals(object obj)
+		{
+			UnityMember other = obj as UnityMember;
+
+			if (other == null)
+			{
+				return false;
+			}
+
+			return
+				this.target == other.target &&
+				this.component == other.component &&
+				this.name == other.name;
+		}
+
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				int hash = 17;
+
+				hash = hash * 29 + target.GetHashCode();
+				hash = hash * 29 + component.GetHashCode();
+				hash = hash * 29 + name.GetHashCode();
+
+				return hash;
+			}
+		}
+
+		#endregion
 	}
 }

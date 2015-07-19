@@ -1,11 +1,15 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
+using Ludiq.Controls;
 using UnityEditor;
 
 namespace Ludiq.Reflection
 {
 	[CustomPropertyDrawer(typeof(UnityVariable))]
-	public class UnityVariableDrawer : UnityMemberDrawer
+	public class UnityVariableDrawer : UnityMemberDrawer<UnityVariable>
 	{
+		#region Filtering
+
 		/// <inheritdoc />
 		protected override FilterAttribute DefaultFilter()
 		{
@@ -14,15 +18,6 @@ namespace Ludiq.Reflection
 			// Override defaults here
 
 			return filter;
-		}
-
-		/// <inheritdoc />
-		protected override string memberLabel
-		{
-			get
-			{
-				return "Variable";
-			}
 		}
 
 		/// <inheritdoc />
@@ -62,6 +57,60 @@ namespace Ludiq.Reflection
 			}
 
 			return valid;
+		}
+
+		// Do not edit below
+
+		#endregion
+
+		#region Value
+
+		/// <inheritdoc />
+		protected override UnityVariable BuildValue(string component, string name)
+		{
+			return new UnityVariable(component, name);
+		}
+
+		#endregion
+
+		#region Reflection
+
+		protected override PopupOption<UnityVariable> GetMemberOption(MemberInfo member, string component)
+		{
+			UnityVariable value;
+			string label;
+
+			if (member is FieldInfo)
+			{
+				FieldInfo field = (FieldInfo)member;
+
+				value = new UnityVariable(component, field.Name);
+				label = string.Format("{0} {1}", field.FieldType.PrettyName(), field.Name);
+			}
+			else if (member is PropertyInfo)
+			{
+				PropertyInfo property = (PropertyInfo)member;
+
+				value = new UnityVariable(component, property.Name);
+				label = string.Format("{0} {1}", property.PropertyType.PrettyName(), property.Name);
+			}
+			else
+			{
+				throw new ArgumentException("Invalid member information type.");
+			}
+
+			return new PopupOption<UnityVariable>(value, label);
+		}
+
+		#endregion
+
+		/// <inheritdoc />
+		protected override string memberLabel
+		{
+			get
+			{
+				return "Variable";
+			}
 		}
 	}
 }

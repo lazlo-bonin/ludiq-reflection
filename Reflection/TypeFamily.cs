@@ -52,5 +52,10 @@ namespace Ludiq.Reflection
 		/// Interfaces
 		/// </summary>
 		Interface = 64,
+
+		/// <summary>
+		/// Void
+		/// </summary>
+		Void = 128,
 	}
 }

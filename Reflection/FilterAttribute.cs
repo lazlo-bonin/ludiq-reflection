@@ -66,7 +66,7 @@ namespace Ludiq.Reflection
 		{
 			this.types = new List<Type>(types);
 
-			Inherited = true;
+			Inherited = false;
 			Instance = true;
 			Static = false;
 			Public = true;

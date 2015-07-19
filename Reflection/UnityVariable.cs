@@ -128,5 +128,19 @@ namespace Ludiq.Reflection
 				throw new InvalidOperationException();
 			}
 		}
+
+		#region Equality
+
+		public override bool Equals(object obj)
+		{
+			return obj is UnityVariable && base.Equals(obj);
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode();
+		}
+
+		#endregion
 	}
 }

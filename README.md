@@ -19,7 +19,7 @@ Inspector view:
 ### Features
 
 - Inspect fields, properties and methods
-- *New:* Inspect animator parameters
+- Inspect animator parameters
 - Serialized for persistency across reloads
 - Works on GameObjects and ScriptableObjects
 - Multi-object editing
@@ -28,11 +28,11 @@ Inspector view:
 
 ### Limitations
 
-- Doesn't support method overloading (yet)
+- Doesn't support open-constructed generic methods (yet)
 
 ## Installation
 
-1. Install [Ludiq.Controls](https://github.com/lazlo-bonin/unity-controls/)
+1. Import [Ludiq.Controls](https://github.com/lazlo-bonin/unity-controls/) in your project
 2. Import the `Reflection` folder in your project
 
 You're good to go!
@@ -113,6 +113,39 @@ Type UnityMethod.returnType { get; }
 
 The return type of the reflected method.
 
+---
+
+#### Assignment Check
+
+Unfortunately, the Unity inspector doesn't allow for `null` values to be assigned to properties. If you want to know if a `UnityMember` has been properly assigned (e.g. not "No Variable" or "No Method" in the inspector), use the `isAssigned` indicator:
+
+```csharp
+using UnityEngine;
+using Ludiq.Reflection;
+
+public class AssignmentExample : MonoBehaviour
+{
+	public UnityVariable variable;
+
+	void Start()
+	{
+		// Bad:
+
+		if (variable != null) // Will always return true
+		{
+			Debug.Log(variable.Get()); // Might throw an exception
+		}
+
+		// Good:
+
+		if (variable.isAssigned)
+		{
+			Debug.Log(variable.Get());
+		}
+	}
+}
+```
+
 ### Advanced Usage
 
 #### Self-Targeting
@@ -164,8 +197,8 @@ public class AdvancedExample : MonoBehaviour
     [Filter(ReadOnly = false)]
     public UnityVariable writableVariable;
 
-    // Only show methods that are on the defined on the object itself
-    [Filter(Inherited = false)]
+    // Include methods that are defined in the object's hierarchy
+    [Filter(Inherited = true)]
     public UnityMethod definedMethod;
 
     // Combine any of the above options
@@ -178,7 +211,7 @@ The available options are:
 
 Option		| Description | Default
 ------------|-------------|--------
-Inherited	|Display members defined in the types's ancestors|true
+Inherited	|Display members defined in the types's ancestors|false
 Instance	|Display instance members|true
 Static		|Display static members|false
 Public		|Display public members|true
@@ -195,13 +228,14 @@ Flag		|Description
 ------------|-----------
 *None*		|No type allowed
 *All*		|Any type allowed
-Value		|Value types only
-Reference	|Reference types only
-Primitive	|Primitive types only
-Array		|Arrays only
-Enum		|Enumerations only
-Class		|Classes only
-Interface	|Interfaces only
+Value		|Value types (excl. void)
+Reference	|Reference types
+Primitive	|Primitive types
+Array		|Arrays
+Enum		|Enumerations
+Class		|Classes
+Interface	|Interfaces
+Void        |Void
 
 You can combine them with the bitwise or operator:
 
@@ -227,11 +261,14 @@ namespace Ludiq.Reflection
 	[CustomPropertyDrawer(typeof(UnityVariable))]
 	public class UnityVariableDrawer : UnityMemberDrawer
 	{
+		...
+
 		protected override FilterAttribute DefaultFilter()
 		{
 			FilterAttribute filter = base.DefaultFilter();
 
 			// Override defaults here
+			filter.Inherited = true;
             filter.NonPublic = true;
 
 			return filter;
@@ -244,7 +281,7 @@ namespace Ludiq.Reflection
 
 #### Creating from script
 
-You can create and modify `UnityMember`s directly from script, if you need to:
+You can create `UnityMember`s directly from script, if you need to:
 
 ```csharp
 using UnityEngine;
@@ -265,9 +302,8 @@ public class ScriptExample : MonoBehaviour
 		method.Invoke(false);
 
 		// Modify a variable assigned from the inspector
-		inspectorVariable.component = "Transform";
-		inspectorVariable.name = "rotation";
-		Debug.Log(variable.Get());
+		inspectorVariable = new UnityVariable("Transform", "Rotation", inspectorVariable.target);
+		Debug.Log(inspectorVariable.Get());
 	}
 }
 ```
@@ -300,7 +336,7 @@ MethodInfo UnityVariable.methodInfo { get; }
 
 The underlying reflected method.
 
-### New: Animator Parameters
+### Animator Parameters
 You can "reflect" animator parameters with the `AnimatorParameter` class. It supports the `SelfTargeted` attribute, but not the `Filter` attribute. Example:
 
 ```csharp
@@ -374,7 +410,7 @@ I'll happily accept pull requests if you have improvements or fixes to suggest.
 
 ### To-do
 
-- Method overloading (requires method signature distinction and serialization)
+- Open-constructed generic method support (requires generic type serialization)
 
 ##  License
 

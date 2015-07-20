@@ -52,9 +52,9 @@ namespace Ludiq.Reflection
 		public UnityMethod(string component, string name, UnityObject target) : base(component, name, target) { }
 
 		public UnityMethod(string name, Type[] parameterTypes) : base(name) { this.parameterTypes = parameterTypes; }
-		public UnityMethod(string name, Type[] parameterTypes, UnityObject target) : base(name, target) { this.parameterTypes = parameterTypes; }
+		public UnityMethod(string name, Type[] parameterTypes, UnityObject target) : this(name, parameterTypes) { this.target = target; Reflect(); }
 		public UnityMethod(string component, string name, Type[] parameterTypes) : base(component, name) { this.parameterTypes = parameterTypes; }
-		public UnityMethod(string component, string name, Type[] parameterTypes, UnityObject target) : base(component, name, target) { this.parameterTypes = parameterTypes; }
+		public UnityMethod(string component, string name, Type[] parameterTypes, UnityObject target) : this(component, name, parameterTypes) { this.target = target; Reflect(); }
 
 		#endregion
 

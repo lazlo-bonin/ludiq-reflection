@@ -54,13 +54,13 @@ namespace Ludiq.Reflection
 
 		public AnimatorParameter(string name)
 		{
-			_name = name;
+			this.name = name;
 		}
 
 		public AnimatorParameter(string name, Animator target)
 		{
-			_name = name;
-			_target = target;
+			this.name = name;
+			this.target = target;
 
 			Link();
 		}

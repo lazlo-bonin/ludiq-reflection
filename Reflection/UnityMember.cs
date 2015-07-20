@@ -76,28 +76,28 @@ namespace Ludiq.Reflection
 
 		public UnityMember(string name)
 		{
-			_name = name;
+			this.name = name;
 		}
 
 		public UnityMember(string name, UnityObject target)
 		{
-			_name = name;
-			_target = target;
+			this.name = name;
+			this.target = target;
 
 			Reflect();
 		}
 
 		public UnityMember(string component, string name)
 		{
-			_component = component;
-			_name = name;
+			this.component = component;
+			this.name = name;
 		}
 
 		public UnityMember(string component, string name, UnityObject target)
 		{
-			_component = component;
-			_name = name;
-			_target = target;
+			this.component = component;
+			this.name = name;
+			this.target = target;
 
 			Reflect();
 		}

@@ -39,7 +39,7 @@ namespace Ludiq.Reflection
 
 			Type type = reflectionTarget.GetType();
 			MemberTypes types = MemberTypes.Property | MemberTypes.Field;
-			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
 
 			MemberInfo[] variables = type.GetMember(name, types, flags);
 

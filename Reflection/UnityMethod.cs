@@ -69,7 +69,7 @@ namespace Ludiq.Reflection
 			EnsureTargeted();
 
 			Type type = reflectionTarget.GetType();
-			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
 
 			if (parameterTypes != null) // Explicit matching
 			{

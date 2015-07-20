@@ -451,6 +451,7 @@ namespace Ludiq.Reflection
 				if (filter.Instance) flags |= BindingFlags.Instance;
 				if (filter.Static) flags |= BindingFlags.Static;
 				if (!filter.Inherited) flags |= BindingFlags.DeclaredOnly;
+				if (filter.Static && filter.Inherited) flags |= BindingFlags.FlattenHierarchy;
 
 				return flags;
 			}

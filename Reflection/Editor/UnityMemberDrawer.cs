@@ -366,8 +366,8 @@ namespace Ludiq.Reflection
 				return Enumerable.Empty<Type>();
 			}
 
-			var childrenComponents = targets.OfType<GameObject>().Select(gameObject => gameObject.GetComponents<Component>());
-			var siblingComponents = targets.OfType<Component>().Select(component => component.GetComponents<Component>());
+			var childrenComponents = targets.OfType<GameObject>().Select(gameObject => gameObject.GetComponents<Component>().Where(c => c != null));
+			var siblingComponents = targets.OfType<Component>().Select(component => component.GetComponents<Component>().Where(c => c != null));
 
 			return childrenComponents.Concat(siblingComponents)
 				.Select(components => components.Select(component => component.GetType()))

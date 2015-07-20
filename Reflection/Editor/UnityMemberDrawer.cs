@@ -82,6 +82,8 @@ namespace Ludiq.Reflection
 
 			var options = new List<PopupOption<TMember>>();
 
+			TMember value = GetValue();
+
 			PopupOption<TMember> selectedOption = null;
 			PopupOption<TMember> noneOption = new PopupOption<TMember>(null, string.Format("No {0}", memberLabel));
 
@@ -123,8 +125,6 @@ namespace Ludiq.Reflection
 
 				// Determine which option is currently selected.
 
-				TMember value = GetValue();
-
 				if (value != null)
 				{
 					string label;
@@ -138,7 +138,25 @@ namespace Ludiq.Reflection
 						label = string.Format("{0}.{1}", value.component, value.name);
 					}
 
-					selectedOption = new PopupOption<TMember>(value, label);
+					UnityMethod method = value as UnityMethod;
+
+					if (method != null)
+					{
+						string parameterString = string.Join(", ", method.parameterTypes.Select(t => t.PrettyName()).ToArray());
+
+						label += string.Format(" ({0})", parameterString);
+					}
+
+					TMember valueInOptions = options.Select(option => option.value).FirstOrDefault(member => member.Corresponds(value));
+
+					if (valueInOptions != null)
+					{
+						selectedOption = new PopupOption<TMember>(valueInOptions, label);
+					}
+					else
+					{
+						selectedOption = new PopupOption<TMember>(value, label);
+					}
 				}
 			}
 			else if (targetType == UnityObjectType.ScriptableObject)
@@ -155,11 +173,14 @@ namespace Ludiq.Reflection
 
 					// Determine which option is currently selected.
 
-					TMember value = GetValue();
-
 					if (value != null)
 					{
-						selectedOption = new PopupOption<TMember>(value, value.name);
+						selectedOption = options.Find(o => o.value.Corresponds(value));
+
+						if (selectedOption == null)
+						{
+							selectedOption = new PopupOption<TMember>(value, value.name);
+						}
 					}
 				}
 			}
@@ -174,10 +195,10 @@ namespace Ludiq.Reflection
 			PopupGUI<TMember>.Render
 			(
 				position,
-				value =>
+				newValue =>
 				{
 					Update(propertyNow);
-					SetValue(value);
+					SetValue(newValue);
 					propertyNow.serializedObject.ApplyModifiedProperties();
 				},
 				options,

@@ -129,18 +129,9 @@ namespace Ludiq.Reflection
 			}
 		}
 
-		#region Equality
-
-		public override bool Equals(object obj)
+		public override bool Corresponds(UnityMember other)
 		{
-			return obj is UnityVariable && base.Equals(obj);
+			return other is UnityVariable && base.Corresponds(other);
 		}
-
-		public override int GetHashCode()
-		{
-			return base.GetHashCode();
-		}
-
-		#endregion
 	}
 }

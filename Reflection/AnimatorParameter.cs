@@ -15,6 +15,7 @@ namespace Ludiq.Reflection
 		public Animator target
 		{
 			get { return _target; }
+			set { _target = value; isLinked = false; }
 		}
 
 		[SerializeField]
@@ -25,6 +26,7 @@ namespace Ludiq.Reflection
 		public string name
 		{
 			get { return _name; }
+			set { _name = value; isLinked = false; }
 		}
 
 		/// <summary>
@@ -36,6 +38,17 @@ namespace Ludiq.Reflection
 		/// Indicates whether the parameter has been found and analyzed.
 		/// </summary>
 		public bool isLinked { get; private set; }
+
+		/// <summary>
+		/// Indicates whether the animator parameter has been properly assigned.
+		/// </summary>
+		public bool isAssigned
+		{
+			get
+			{
+				return target != null && !string.IsNullOrEmpty(name);
+			}
+		}
 
 		public AnimatorParameter() { }
 

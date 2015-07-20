@@ -78,26 +78,21 @@ namespace Ludiq.Reflection
 			base.SetValue(value);
 
 			// Assign the parameter types to their underlying properties
-			// (Messy code, Unity has obscure ways of dealing with array and multi-selected properties)
 
 			if (value == null || value.parameterTypes == null)
 			{
 				parameterTypesProperty.arraySize = 0;
-				return;
 			}
-
-			foreach (SerializedProperty arrayProperty in parameterTypesProperty.Multiple())
+			else
 			{
-				arrayProperty.arraySize = value.parameterTypes.Length;
+				parameterTypesProperty.arraySize = value.parameterTypes.Length;
 
-				for (int i = 0; i < arrayProperty.arraySize; i++)
+				for (int i = 0; i < parameterTypesProperty.arraySize; i++)
 				{
-					SerializedProperty parameterTypeProperty = arrayProperty.GetArrayElementAtIndex(i);
+					SerializedProperty parameterTypeProperty = parameterTypesProperty.GetArrayElementAtIndex(i);
 
 					parameterTypeProperty.stringValue = TypeSerializer.Serialize(value.parameterTypes[i]);
 				}
-
-				arrayProperty.serializedObject.ApplyModifiedProperties();
 			}
 		}
 

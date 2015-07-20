@@ -16,10 +16,15 @@ namespace Ludiq.Reflection
 
 		[SerializeField]
 		private string[] _parameterTypes;
+		private Type[] __parameterTypes;
 		/// <summary>
 		/// The types of the method's parameters.
 		/// </summary>
-		public Type[] parameterTypes { get; private set; }
+		public Type[] parameterTypes
+		{
+			get { return __parameterTypes; }
+			set { __parameterTypes = value; isReflected = false; }
+		}
 
 		public void OnAfterDeserialize()
 		{
@@ -128,40 +133,12 @@ namespace Ludiq.Reflection
 			}
 		}
 
-		#region Equality
-
-		public override bool Equals(object obj)
+		public override bool Corresponds(UnityMember other)
 		{
-			UnityMethod other = obj as UnityMethod;
-
-			if (other == null)
-			{
-				return false;
-			}
-
-			if (!base.Equals(obj))
-			{
-				return false;
-			}
-
-			return this.parameterTypes.SequenceEqual(other.parameterTypes);
+			return 
+				other is UnityMethod && 
+				base.Corresponds(other) && 
+				this.parameterTypes.SequenceEqual(((UnityMethod)other).parameterTypes);
 		}
-
-		public override int GetHashCode()
-		{
-			unchecked
-			{
-				int hash = base.GetHashCode();
-
-				foreach (Type parameterType in parameterTypes)
-				{
-					hash = hash * 29 + parameterType.GetHashCode();
-				}
-
-				return hash;
-			}
-		}
-
-		#endregion
 	}
 }

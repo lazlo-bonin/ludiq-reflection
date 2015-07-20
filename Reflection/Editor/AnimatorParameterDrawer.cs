@@ -84,6 +84,8 @@ namespace Ludiq.Reflection
 			if (!enabled) EditorGUI.EndDisabledGroup();
 		}
 
+		#region Value
+
 		/// <summary>
 		/// Returns an animator parameter constructed from the current property values.
 		/// </summary>
@@ -114,31 +116,43 @@ namespace Ludiq.Reflection
 			}
 		}
 
+		#endregion
+
+		#region Targetting
+
+		/// <inheritdoc />
+		protected override Object GetSelfTarget(Object obj)
+		{
+			if (obj is GameObject)
+			{
+				return ((GameObject)obj).GetComponent<Animator>();
+			}
+			else if (obj is Component)
+			{
+				return ((Component)obj).GetComponent<Animator>();
+			}
+			else
+			{
+				return null;
+			}
+		}
+
 		/// <summary>
 		/// Gets the list of targets on the inspected objects.
 		/// </summary>
 		protected Animator[] FindTargets()
 		{
-			IEnumerable<Object> objects;
-
-			if (isSelfTargeted)
-			{
-				// In self targeting mode, the objects are the inspected objects themselves.
-
-				objects = property.serializedObject.targetObjects;
-			}
-			else
-			{
-				// In manual targeting mode, the targets the values of each target property.
-
-				objects = targetProperty.Multiple().Select(p => p.objectReferenceValue);
-			}
+			IEnumerable<Object> objects = targetProperty.Multiple().Select(p => p.objectReferenceValue);
 
 			var childrenAnimators = objects.OfType<GameObject>().SelectMany(gameObject => gameObject.GetComponents<Animator>());
 			var siblingAnimators = objects.OfType<Component>().SelectMany(component => component.GetComponents<Animator>());
 
 			return childrenAnimators.Concat(siblingAnimators).ToArray();
 		}
+
+		#endregion
+
+		#region Reflection
 
 		/// <summary>
 		/// Gets the list of shared parameter names as popup options.
@@ -163,5 +177,7 @@ namespace Ludiq.Reflection
 
 			return options;
 		}
+
+		#endregion
 	}
 }

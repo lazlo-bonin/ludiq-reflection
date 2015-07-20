@@ -2,6 +2,7 @@
 using Ludiq.Controls;
 using UnityEditor;
 using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace Ludiq.Reflection
 {
@@ -12,12 +13,25 @@ namespace Ludiq.Reflection
 		/// </summary>
 		protected bool isSelfTargeted;
 
+		protected bool showTargetField
+		{
+			get
+			{
+				return !isSelfTargeted || ShowSelfTargetField;
+			}
+		}
+
 		/// <summary>
 		/// The UnityMember.target of the inspected property, of type Object.
 		/// </summary>
 		protected SerializedProperty targetProperty;
 
 		#region Graphical Configuration
+
+		/// <summary>
+		/// Whether the target field should be shown in self-targetting mode.
+		/// </summary>
+		protected const bool ShowSelfTargetField = false;
 
 		/// <summary>
 		/// The padding between the label and the target and member controls, in vertical display.
@@ -41,6 +55,8 @@ namespace Ludiq.Reflection
 		/// </summary>
 		protected virtual void Update(SerializedProperty property)
 		{
+			property.serializedObject.Update();
+
 			this.targetProperty = property.FindPropertyRelative("_target");
 
 			isSelfTargeted = Attribute.IsDefined(fieldInfo, typeof(SelfTargetedAttribute));
@@ -56,13 +72,13 @@ namespace Ludiq.Reflection
 			// Double the height and add the padding for self-targeting, 
 			// because we'll display the controls on another line.
 
-			if (isSelfTargeted || string.IsNullOrEmpty(label.text))
+			if (showTargetField && !string.IsNullOrEmpty(label.text))
 			{
-				return base.GetPropertyHeight(property, label);
+				return base.GetPropertyHeight(property, label) * 2 + LabelPadding + BottomPadding;
 			}
 			else
 			{
-				return base.GetPropertyHeight(property, label) * 2 + LabelPadding + BottomPadding;
+				return base.GetPropertyHeight(property, label);
 			}
 		}
 
@@ -88,12 +104,7 @@ namespace Ludiq.Reflection
 			Rect targetPosition;
 			Rect memberPosition;
 
-			if (isSelfTargeted)
-			{
-				targetPosition = new Rect(0, 0, 0, 0);
-				memberPosition = EditorGUI.PrefixLabel(position, label);
-			}
-			else
+			if (showTargetField)
 			{
 				if (!string.IsNullOrEmpty(label.text))
 				{
@@ -111,6 +122,11 @@ namespace Ludiq.Reflection
 				memberPosition.width -= (InnerPadding / 2);
 				memberPosition.x = targetPosition.xMax + InnerPadding;
 			}
+			else
+			{
+				targetPosition = new Rect(0, 0, 0, 0);
+				memberPosition = EditorGUI.PrefixLabel(position, label);
+			}
 
 			// Render controls
 			RenderTargetControl(targetPosition);
@@ -120,6 +136,8 @@ namespace Ludiq.Reflection
 			EditorGUI.indentLevel = oldIndent;
 
 			EditorGUI.EndProperty();
+
+			property.serializedObject.ApplyModifiedProperties();
 		}
 
 		protected virtual void RenderTargetControl(Rect position)
@@ -132,15 +150,26 @@ namespace Ludiq.Reflection
 			{
 				foreach (var singleTargetProperty in targetProperty.Multiple())
 				{
-					singleTargetProperty.objectReferenceValue = singleTargetProperty.serializedObject.targetObject;
+					singleTargetProperty.objectReferenceValue = GetSelfTarget(singleTargetProperty.serializedObject.targetObject);
 				}
 			}
-			else
+
+			if (showTargetField)
 			{
+				EditorGUI.BeginDisabledGroup(isSelfTargeted);
 				EditorGUI.PropertyField(position, targetProperty, GUIContent.none);
+				EditorGUI.EndDisabledGroup();
 			}
 		}
 
 		protected abstract void RenderMemberControl(Rect position);
+
+		/// <summary>
+		/// Returns the object assigned as self-target from a serialized object.
+		/// </summary>
+		protected virtual UnityObject GetSelfTarget(UnityObject obj)
+		{
+			return obj;
+		}
 	}
 }

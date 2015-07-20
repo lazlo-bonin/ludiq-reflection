@@ -55,8 +55,6 @@ namespace Ludiq.Reflection
 		/// </summary>
 		protected virtual void Update(SerializedProperty property)
 		{
-			property.serializedObject.Update();
-
 			this.targetProperty = property.FindPropertyRelative("_target");
 
 			isSelfTargeted = Attribute.IsDefined(fieldInfo, typeof(SelfTargetedAttribute));
@@ -136,8 +134,6 @@ namespace Ludiq.Reflection
 			EditorGUI.indentLevel = oldIndent;
 
 			EditorGUI.EndProperty();
-
-			property.serializedObject.ApplyModifiedProperties();
 		}
 
 		protected virtual void RenderTargetControl(Rect position)

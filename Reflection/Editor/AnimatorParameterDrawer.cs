@@ -51,12 +51,23 @@ namespace Ludiq.Reflection
 			PopupOption<AnimatorParameter> selectedOption = null;
 			PopupOption<AnimatorParameter> noneOption = new PopupOption<AnimatorParameter>(null, "No Parameter");
 
-			AnimatorParameter current = GetValue();
+			AnimatorParameter value = GetValue();
 
-			if (current != null)
+			if (value != null)
 			{
-				string label = current.name;
-				selectedOption = new PopupOption<AnimatorParameter>(current, label);
+				string label = value.name;
+
+				AnimatorParameter valueInOptions = options.Select(option => option.value).FirstOrDefault(ap => ap.Corresponds(value));
+
+				if (valueInOptions != null)
+				{
+					selectedOption = new PopupOption<AnimatorParameter>(valueInOptions, label);
+				}
+				else
+				{
+					selectedOption = new PopupOption<AnimatorParameter>(value, label);
+				}
+
 			}
 
 			// Make sure the callback uses the property of this drawer, not at its later value.
@@ -69,10 +80,10 @@ namespace Ludiq.Reflection
 			PopupGUI<AnimatorParameter>.Render
 			(
 				position,
-				value =>
+				newValue =>
 				{
 					Update(propertyNow);
-					SetValue(value);
+					SetValue(newValue);
 					propertyNow.serializedObject.ApplyModifiedProperties();
 				},
 				options,

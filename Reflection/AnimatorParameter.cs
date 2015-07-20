@@ -187,5 +187,13 @@ namespace Ludiq.Reflection
 				}
 			}
 		}
+
+		public bool Corresponds(AnimatorParameter other)
+		{
+			return
+				(other != null || !this.isAssigned) &&
+				this.target == other.target &&
+				this.name == other.name;
+		}
 	}
 }

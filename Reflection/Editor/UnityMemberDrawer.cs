@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
-namespace Ludiq.Reflection
+namespace Ludiq.Reflection.Editor
 {
 	[CustomPropertyDrawer(typeof(UnityMember))]
 	public abstract class UnityMemberDrawer<TMember> : TargetedDrawer where TMember : UnityMember

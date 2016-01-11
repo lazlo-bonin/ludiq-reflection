@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
-namespace Ludiq.Reflection
+namespace Ludiq.Reflection.Editor
 {
 	public abstract class TargetedDrawer : PropertyDrawer
 	{

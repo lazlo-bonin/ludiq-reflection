@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-namespace Ludiq.Reflection
+namespace Ludiq.Reflection.Editor
 {
 	[CustomPropertyDrawer(typeof(AnimatorParameter))]
 	public class AnimatorParameterDrawer : TargetedDrawer

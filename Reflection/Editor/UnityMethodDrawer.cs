@@ -4,7 +4,7 @@ using System.Reflection;
 using Ludiq.Controls;
 using UnityEditor;
 
-namespace Ludiq.Reflection
+namespace Ludiq.Reflection.Editor
 {
 	[CustomPropertyDrawer(typeof(UnityMethod))]
 	public class UnityMethodDrawer : UnityMemberDrawer<UnityMethod>

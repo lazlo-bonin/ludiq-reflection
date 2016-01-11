@@ -1,5 +1,5 @@
 ﻿using System;
-using Ludiq.Controls;
+using Ludiq.Controls.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;

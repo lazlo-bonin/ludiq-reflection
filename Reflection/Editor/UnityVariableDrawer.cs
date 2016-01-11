@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using Ludiq.Controls;
+using Ludiq.Controls.Editor;
 using UnityEditor;
 
 namespace Ludiq.Reflection.Editor

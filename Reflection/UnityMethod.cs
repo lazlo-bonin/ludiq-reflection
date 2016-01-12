@@ -61,6 +61,7 @@ namespace Ludiq.Reflection
 		/// <inheritdoc />
 		public override void Reflect()
 		{
+#if !NETFX_CORE
 			if (!isAssigned)
 			{
 				throw new Exception("Method name not specified.");
@@ -100,6 +101,9 @@ namespace Ludiq.Reflection
 			}
 
 			isReflected = true;
+#else
+			throw new Exception("UnityMethod is not supported in .NET Core.");
+#endif
 		}
 
 		/// <summary>

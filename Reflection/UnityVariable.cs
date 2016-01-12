@@ -30,6 +30,7 @@ namespace Ludiq.Reflection
 		/// <inheritdoc />
 		public override void Reflect()
 		{
+#if !NETFX_CORE
 			if (!isAssigned)
 			{
 				throw new Exception("Field or property name not specified.");
@@ -54,6 +55,9 @@ namespace Ludiq.Reflection
 			propertyInfo = variable as PropertyInfo;
 
 			isReflected = true;
+#else
+			throw new Exception("UnityVariable is not supported in .NET Core.");
+#endif
 		}
 
 		/// <summary>

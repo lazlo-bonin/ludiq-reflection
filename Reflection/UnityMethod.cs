@@ -18,7 +18,7 @@ namespace Ludiq.Reflection
 		/// <summary>
 		/// Whether the reflected method is an extension method.
 		/// </summary>
-		private bool isExtension;
+		public bool isExtension { get; private set; }
 
 		[SerializeField]
 		private string[] _parameterTypes;

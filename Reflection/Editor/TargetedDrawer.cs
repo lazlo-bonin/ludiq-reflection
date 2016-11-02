@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ludiq.Controls.Editor;
 using UnityEditor;
 using UnityEngine;

@@ -7,7 +7,7 @@ namespace Ludiq.Reflection.Editor
 {
 	public static class Extensions
 	{
-		// Used to print pretty type names for primities
+		// Used to print pretty type names for primitives
 		private static CSharpCodeProvider csharp = new CSharpCodeProvider();
 
 		/// <summary>

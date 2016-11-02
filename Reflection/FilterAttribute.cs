@@ -45,6 +45,11 @@ namespace Ludiq.Reflection
 		public bool WriteOnly { get; set; }
 
 		/// <summary>
+		/// Whether to display extension methods.
+		/// </summary>
+		public bool Extension { get; set; }
+
+		/// <summary>
 		/// The type families to display.
 		/// </summary>
 		public TypeFamily TypeFamilies { get; set; }
@@ -73,6 +78,7 @@ namespace Ludiq.Reflection
 			NonPublic = false;
 			ReadOnly = true;
 			WriteOnly = true;
+			Extension = true;
 			TypeFamilies = TypeFamily.All;
 		}
 	}

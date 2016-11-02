@@ -218,6 +218,7 @@ Public		|Display public members|true
 NonPublic	|Display private and protected members|false
 ReadOnly	|Display read-only properties and fields|true
 WriteOnly	|Display write-only properties and fields|true
+Extension	|Display extension methods|true
 TypeFamily|Determines which member type families are displayed|TypeFamily.All
 Types		|Determines which member types are displayed|*(Any)*
 

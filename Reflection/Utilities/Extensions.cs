@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Ludiq.Reflection
 {
@@ -37,6 +39,28 @@ namespace Ludiq.Reflection
 			long lValue = Convert.ToInt64(value);
 			long lFlag = Convert.ToInt64(flag);
 			return (lValue & lFlag) != 0;
+		}
+
+		private static MethodInfo[] extensionMethodsCache;
+
+		/// <summary>
+		/// Searches all assemblies for extension methods for a given type.
+		/// </summary>
+		public static IEnumerable<MethodInfo> GetExtensionMethods(this Type type)
+		{
+			// http://stackoverflow.com/a/299526
+
+			if (extensionMethodsCache == null)
+			{
+				extensionMethodsCache = AppDomain.CurrentDomain.GetAssemblies()
+				.SelectMany(assembly => assembly.GetTypes())
+				.Where(potentialType => potentialType.IsSealed && !potentialType.IsGenericType && !potentialType.IsNested)
+				.SelectMany(extensionType => extensionType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+				.Where(method => method.IsDefined(typeof(ExtensionAttribute), false))
+				.ToArray();
+			}
+
+			return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType == type);
 		}
 	}
 }

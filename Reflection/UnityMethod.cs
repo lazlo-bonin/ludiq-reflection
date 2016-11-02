@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -13,6 +14,11 @@ namespace Ludiq.Reflection
 		/// The underlying reflected method.
 		/// </summary>
 		public MethodInfo methodInfo { get; private set; }
+
+		/// <summary>
+		/// Whether the reflected method is an extension method.
+		/// </summary>
+		private bool isExtension;
 
 		[SerializeField]
 		private string[] _parameterTypes;
@@ -62,6 +68,8 @@ namespace Ludiq.Reflection
 		public override void Reflect()
 		{
 #if !NETFX_CORE
+			isExtension = false;
+
 			if (!isAssigned)
 			{
 				throw new Exception("Method name not specified.");
@@ -78,26 +86,46 @@ namespace Ludiq.Reflection
 
 				if (methodInfo == null)
 				{
+					methodInfo = type.GetExtensionMethods()
+						.Where(extension => extension.Name == name)
+						.Where(extension => Enumerable.SequenceEqual(extension.GetParameters().Select(paramInfo => paramInfo.ParameterType), parameterTypes))
+						.FirstOrDefault();
+
+					if (methodInfo != null)
+					{
+						isExtension = true;
+					}
+				}
+
+				if (methodInfo == null)
+				{
 					throw new Exception(string.Format("No matching method found: '{0}.{1} ({2})'", type.Name, name, string.Join(", ", parameterTypes.Select(t => t.Name).ToArray())));
 				}
 			}
 			else // Implicit matching
 			{
-				MemberTypes types = MemberTypes.Method;
+				var normalMethods = type.GetMember(name, MemberTypes.Method, flags).OfType<MethodInfo>().ToList();
+				var extensionMethods = type.GetExtensionMethods().Where(extension => extension.Name == name).ToList();
+				var methods = new List<MethodInfo>();
+				methods.AddRange(normalMethods);
+				methods.AddRange(extensionMethods);
 
-				MethodInfo[] methods = type.GetMember(name, types, flags).OfType<MethodInfo>().ToArray();
-
-				if (methods.Length == 0)
+				if (methods.Count == 0)
 				{
 					throw new Exception(string.Format("No matching method found: '{0}.{1}'", type.Name, name));
 				}
 
-				if (methods.Length > 1)
+				if (methods.Count > 1)
 				{
 					throw new Exception(string.Format("Multiple method signatures found for '{0}.{1}'\nSpecify the parameter types explicitly.", type.FullName, name));
 				}
-
+				
 				methodInfo = methods[0];
+
+				if (extensionMethods.Contains(methodInfo))
+				{
+					isExtension = true;
+				}
 			}
 
 			isReflected = true;
@@ -112,6 +140,14 @@ namespace Ludiq.Reflection
 		public object Invoke(params object[] parameters)
 		{
 			EnsureReflected();
+
+			if (isExtension)
+			{
+				var fullParameters = new object[parameters.Length + 1];
+				fullParameters[0] = reflectionTarget;
+				Array.Copy(parameters, 0, fullParameters, 1, parameters.Length);
+				parameters = fullParameters;
+			}
 
 			return methodInfo.Invoke(reflectionTarget, parameters);
 		}

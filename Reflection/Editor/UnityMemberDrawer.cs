@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -400,7 +400,7 @@ namespace Ludiq.Reflection.Editor
 		/// <summary>
 		/// Gets the list of members available on a type as popup options.
 		/// </summary>
-		protected List<PopupOption<TMember>> GetMemberOptions(Type type, string component = null)
+		protected virtual List<PopupOption<TMember>> GetMemberOptions(Type type, string component = null)
 		{
 			return type
 				.GetMembers(validBindingFlags)

@@ -1,8 +1,11 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Ludiq.Controls.Editor;
 using UnityEditor;
+using UnityEngine;
 
 namespace Ludiq.Reflection.Editor
 {
@@ -151,6 +154,22 @@ namespace Ludiq.Reflection.Editor
 
 		#region Reflection
 
+		protected override List<PopupOption<UnityMethod>> GetMemberOptions(Type type, string component = null)
+		{
+			var methods = base.GetMemberOptions(type, component);
+
+			if (filter.Extension)
+			{
+				var extensionMethods = type.GetExtensionMethods()
+					.Where(ValidateMember)
+					.Select(method => GetMemberOption(method, component));
+
+				methods.AddRange(extensionMethods);
+			}
+
+			return methods;
+		}
+		
 		protected override PopupOption<UnityMethod> GetMemberOption(MemberInfo member, string component)
 		{
 			UnityMethod value;

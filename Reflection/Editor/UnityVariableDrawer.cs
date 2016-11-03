@@ -75,7 +75,7 @@ namespace Ludiq.Reflection.Editor
 
 		#region Reflection
 
-		protected override PopupOption<UnityVariable> GetMemberOption(MemberInfo member, string component)
+		protected override PopupOption<UnityVariable> GetMemberOption(MemberInfo member, string component, bool inherited)
 		{
 			UnityVariable value;
 			string label;
@@ -97,6 +97,11 @@ namespace Ludiq.Reflection.Editor
 			else
 			{
 				throw new ArgumentException("Invalid member information type.");
+			}
+
+			if (inherited)
+			{
+				label = "Inherited/" + label;
 			}
 
 			return new PopupOption<UnityVariable>(value, label);

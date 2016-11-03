@@ -162,7 +162,7 @@ namespace Ludiq.Reflection.Editor
 			{
 				var extensionMethods = type.GetExtensionMethods()
 					.Where(ValidateMember)
-					.Select(method => GetMemberOption(method, component));
+					.Select(method => GetMemberOption(method, component, method.GetParameters()[0].ParameterType != type));
 
 				methods.AddRange(extensionMethods);
 			}
@@ -170,7 +170,7 @@ namespace Ludiq.Reflection.Editor
 			return methods;
 		}
 		
-		protected override PopupOption<UnityMethod> GetMemberOption(MemberInfo member, string component)
+		protected override PopupOption<UnityMethod> GetMemberOption(MemberInfo member, string component, bool inherited)
 		{
 			UnityMethod value;
 			string label;
@@ -178,7 +178,7 @@ namespace Ludiq.Reflection.Editor
 			if (member is MethodInfo)
 			{
 				MethodInfo method = (MethodInfo)member;
-
+				
 				ParameterInfo[] parameters = method.GetParameters();
 
 				value = new UnityMethod(component, member.Name, parameters.Select(p => p.ParameterType).ToArray());
@@ -190,6 +190,11 @@ namespace Ludiq.Reflection.Editor
 			else
 			{
 				throw new ArgumentException("Invalid member information type.");
+			}
+
+			if (inherited)
+			{
+				label = "Inherited/" + label;
 			}
 
 			return new PopupOption<UnityMethod>(value, label);

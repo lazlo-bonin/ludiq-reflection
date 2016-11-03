@@ -182,7 +182,7 @@ namespace Ludiq.Reflection
 		/// <summary>
 		/// Gathers the reflection data if it is not alreadypresent.
 		/// </summary>
-		protected void EnsureReflected()
+		public void EnsureReflected()
 		{
 			if (!isReflected)
 			{

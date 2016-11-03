@@ -94,7 +94,7 @@ namespace Ludiq.Reflection.Editor
 
 				if (HasSharedGameObject())
 				{
-					var gameObjectOptions = GetMemberOptions(typeof(GameObject));
+					var gameObjectOptions = GetSortedMemberOptions(typeof(GameObject));
 
 					foreach (var gameObjectOption in gameObjectOptions)
 					{
@@ -111,7 +111,7 @@ namespace Ludiq.Reflection.Editor
 
 				foreach (Type componentType in GetSharedComponentTypes())
 				{
-					var componentOptions = GetMemberOptions(componentType, componentType.Name);
+					var componentOptions = GetSortedMemberOptions(componentType, componentType.Name);
 
 					foreach (var componentOption in componentOptions)
 					{
@@ -169,7 +169,7 @@ namespace Ludiq.Reflection.Editor
 
 				if (scriptableObjectType != null)
 				{
-					options.AddRange(GetMemberOptions(scriptableObjectType));
+					options.AddRange(GetSortedMemberOptions(scriptableObjectType));
 
 					// Determine which option is currently selected.
 
@@ -406,11 +406,28 @@ namespace Ludiq.Reflection.Editor
 				.GetMembers(validBindingFlags)
 				.Where(member => validMemberTypes.HasFlag(member.MemberType))
 				.Where(ValidateMember)
-				.Select(member => GetMemberOption(member, component))
+				.Select(member => GetMemberOption(member, component, member.DeclaringType != type))
 				.ToList();
 		}
 
-		protected abstract PopupOption<TMember> GetMemberOption(MemberInfo member, string component);
+		/// <summary>
+		/// Gets the sorted list of members available on a type as popup options.
+		/// </summary>
+		protected virtual List<PopupOption<TMember>> GetSortedMemberOptions(Type type, string component = null)
+		{
+			var options = GetMemberOptions(type, component);
+
+			var withoutSlashes = options.Where(o => !o.label.Contains("/")).ToList();
+			var withSlashes = options.Where(o => o.label.Contains("/")).ToList();
+
+			options.Clear();
+			options.AddRange(withSlashes);
+			options.AddRange(withoutSlashes);
+
+			return options;
+		}
+
+		protected abstract PopupOption<TMember> GetMemberOption(MemberInfo member, string component, bool inherited);
 
 		#endregion
 

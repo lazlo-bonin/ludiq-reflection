@@ -60,7 +60,7 @@ namespace Ludiq.Reflection
 				.ToArray();
 			}
 
-			return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType == type);
+			return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType.IsAssignableFrom(type));
 		}
 	}
 }

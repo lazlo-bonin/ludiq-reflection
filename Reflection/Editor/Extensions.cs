@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.CSharp;
 
 namespace Ludiq.Reflection.Editor
@@ -17,14 +18,30 @@ namespace Ludiq.Reflection.Editor
 		{
 			string cSharpOutput = csharp.GetTypeOutput(new CodeTypeReference(type));
 
-			if (cSharpOutput.Contains('.'))
+			var matches = Regex.Matches(cSharpOutput, @"([a-zA-Z0-9_\.]+)");
+
+			var prettyName = RemoveNamespace(matches[0].Value);
+
+			if (matches.Count > 1)
 			{
-				return cSharpOutput.Substring(cSharpOutput.LastIndexOf('.') + 1);
+				prettyName += "<";
+
+				prettyName += string.Join(", ", matches.Cast<Match>().Skip(1).Select(m => RemoveNamespace(m.Value)).ToArray());
+
+				prettyName += ">";
 			}
-			else
+
+			return prettyName;
+		}
+
+		private static string RemoveNamespace(string typeFullName)
+		{
+			if (!typeFullName.Contains('.'))
 			{
-				return cSharpOutput;
+				return typeFullName;
 			}
+
+			return typeFullName.Substring(typeFullName.LastIndexOf('.') + 1);
 		}
 	}
 }

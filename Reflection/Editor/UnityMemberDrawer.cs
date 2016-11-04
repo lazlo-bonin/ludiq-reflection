@@ -81,12 +81,12 @@ namespace Ludiq.Reflection.Editor
 
 			// Display a list of all available reflected members in a popup.
 
-			var options = new List<PopupOption<TMember>>();
+			var options = new List<DropdownOption<TMember>>();
 
 			TMember value = GetValue();
 
-			PopupOption<TMember> selectedOption = null;
-			PopupOption<TMember> noneOption = new PopupOption<TMember>(null, string.Format("No {0}", memberLabel));
+			DropdownOption<TMember> selectedOption = null;
+			DropdownOption<TMember> noneOption = new DropdownOption<TMember>(null, string.Format("No {0}", memberLabel));
 
 			if (targetType == UnityObjectType.GameObject)
 			{
@@ -152,11 +152,11 @@ namespace Ludiq.Reflection.Editor
 
 					if (valueInOptions != null)
 					{
-						selectedOption = new PopupOption<TMember>(valueInOptions, label);
+						selectedOption = new DropdownOption<TMember>(valueInOptions, label);
 					}
 					else
 					{
-						selectedOption = new PopupOption<TMember>(value, label);
+						selectedOption = new DropdownOption<TMember>(value, label);
 					}
 				}
 			}
@@ -180,7 +180,7 @@ namespace Ludiq.Reflection.Editor
 
 						if (selectedOption == null)
 						{
-							selectedOption = new PopupOption<TMember>(value, value.name);
+							selectedOption = new DropdownOption<TMember>(value, value.name);
 						}
 					}
 				}
@@ -193,7 +193,7 @@ namespace Ludiq.Reflection.Editor
 
 			if (!enabled) EditorGUI.BeginDisabledGroup(true);
 
-			PopupGUI<TMember>.Render
+			DropdownGUI<TMember>.PopupSingle
 			(
 				position,
 				newValue =>
@@ -401,7 +401,7 @@ namespace Ludiq.Reflection.Editor
 		/// <summary>
 		/// Gets the list of members available on a type as popup options.
 		/// </summary>
-		protected virtual List<PopupOption<TMember>> GetMemberOptions(Type type, string component = null)
+		protected virtual List<DropdownOption<TMember>> GetMemberOptions(Type type, string component = null)
 		{
 			return type
 				.GetMembers(validBindingFlags)
@@ -414,7 +414,7 @@ namespace Ludiq.Reflection.Editor
 		/// <summary>
 		/// Gets the sorted list of members available on a type as popup options.
 		/// </summary>
-		protected virtual List<PopupOption<TMember>> GetSortedMemberOptions(Type type, string component = null)
+		protected virtual List<DropdownOption<TMember>> GetSortedMemberOptions(Type type, string component = null)
 		{
 			var options = GetMemberOptions(type, component);
 
@@ -428,7 +428,7 @@ namespace Ludiq.Reflection.Editor
 			return options;
 		}
 
-		protected abstract PopupOption<TMember> GetMemberOption(MemberInfo member, string component, bool inherited);
+		protected abstract DropdownOption<TMember> GetMemberOption(MemberInfo member, string component, bool inherited);
 
 		#endregion
 

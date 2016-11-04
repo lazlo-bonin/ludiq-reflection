@@ -49,8 +49,8 @@ namespace Ludiq.Reflection.Editor
 		{
 			var options = GetNameOptions();
 
-			PopupOption<AnimatorParameter> selectedOption = null;
-			PopupOption<AnimatorParameter> noneOption = new PopupOption<AnimatorParameter>(null, "No Parameter");
+			DropdownOption<AnimatorParameter> selectedOption = null;
+			DropdownOption<AnimatorParameter> noneOption = new DropdownOption<AnimatorParameter>(null, "No Parameter");
 
 			AnimatorParameter value = GetValue();
 
@@ -62,11 +62,11 @@ namespace Ludiq.Reflection.Editor
 
 				if (valueInOptions != null)
 				{
-					selectedOption = new PopupOption<AnimatorParameter>(valueInOptions, label);
+					selectedOption = new DropdownOption<AnimatorParameter>(valueInOptions, label);
 				}
 				else
 				{
-					selectedOption = new PopupOption<AnimatorParameter>(value, label);
+					selectedOption = new DropdownOption<AnimatorParameter>(value, label);
 				}
 
 			}
@@ -78,7 +78,7 @@ namespace Ludiq.Reflection.Editor
 
 			if (!enabled) EditorGUI.BeginDisabledGroup(true);
 
-			PopupGUI<AnimatorParameter>.Render
+			DropdownGUI<AnimatorParameter>.PopupSingle
 			(
 				position,
 				newValue =>
@@ -169,9 +169,9 @@ namespace Ludiq.Reflection.Editor
 		/// <summary>
 		/// Gets the list of shared parameter names as popup options.
 		/// </summary>
-		protected List<PopupOption<AnimatorParameter>> GetNameOptions()
+		protected List<DropdownOption<AnimatorParameter>> GetNameOptions()
 		{
-			var options = new List<PopupOption<AnimatorParameter>>();
+			var options = new List<DropdownOption<AnimatorParameter>>();
 
 			List<string> names = targets
 				.Select(animator => ((AnimatorController)animator.runtimeAnimatorController))
@@ -184,7 +184,7 @@ namespace Ludiq.Reflection.Editor
 
 			foreach (string name in names)
 			{
-				options.Add(new PopupOption<AnimatorParameter>(new AnimatorParameter(name), name));
+				options.Add(new DropdownOption<AnimatorParameter>(new AnimatorParameter(name), name));
 			}
 
 			return options;

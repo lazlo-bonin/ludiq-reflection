@@ -111,7 +111,7 @@ namespace Ludiq.Reflection.Editor
 
 		#region Reflection
 
-		protected override List<PopupOption<UnityGetter>> GetMemberOptions(Type type, string component = null)
+		protected override List<DropdownOption<UnityGetter>> GetMemberOptions(Type type, string component = null)
 		{
 			var getters = base.GetMemberOptions(type, component);
 
@@ -127,7 +127,7 @@ namespace Ludiq.Reflection.Editor
 			return getters;
 		}
 
-		protected override PopupOption<UnityGetter> GetMemberOption(MemberInfo member, string component, bool inherited)
+		protected override DropdownOption<UnityGetter> GetMemberOption(MemberInfo member, string component, bool inherited)
 		{
 			UnityGetter value;
 			string label;
@@ -168,7 +168,7 @@ namespace Ludiq.Reflection.Editor
 				label = "Inherited/" + label;
 			}
 
-			return new PopupOption<UnityGetter>(value, label);
+			return new DropdownOption<UnityGetter>(value, label);
 		}
 
 		#endregion

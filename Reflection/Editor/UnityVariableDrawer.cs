@@ -65,7 +65,7 @@ namespace Ludiq.Reflection.Editor
 
 		#region Reflection
 
-		protected override PopupOption<UnityVariable> GetMemberOption(MemberInfo member, string component, bool inherited)
+		protected override DropdownOption<UnityVariable> GetMemberOption(MemberInfo member, string component, bool inherited)
 		{
 			UnityVariable value;
 			string label;
@@ -94,7 +94,7 @@ namespace Ludiq.Reflection.Editor
 				label = "Inherited/" + label;
 			}
 
-			return new PopupOption<UnityVariable>(value, label);
+			return new DropdownOption<UnityVariable>(value, label);
 		}
 
 		#endregion

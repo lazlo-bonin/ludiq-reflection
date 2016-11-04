@@ -13,6 +13,8 @@ namespace Ludiq.Reflection.Editor
 	[CustomPropertyDrawer(typeof(UnityMember))]
 	public abstract class UnityMemberDrawer<TMember> : TargetedDrawer where TMember : UnityMember
 	{
+		internal static FilterAttribute filterOverride;
+
 		#region Fields
 
 		/// <summary>
@@ -59,7 +61,7 @@ namespace Ludiq.Reflection.Editor
 			nameProperty = property.FindPropertyRelative("_name");
 
 			// Fetch the filter
-			filter = (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? DefaultFilter();
+			filter = filterOverride ?? (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? DefaultFilter();
 
 			// Find the targets
 			targets = FindTargets();

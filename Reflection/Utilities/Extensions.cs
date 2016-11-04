@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace Ludiq.Reflection
+namespace Ludiq.Reflection.Internal
 {
 	public static class Extensions
 	{
@@ -56,11 +56,16 @@ namespace Ludiq.Reflection
 				.SelectMany(assembly => assembly.GetTypes())
 				.Where(potentialType => potentialType.IsSealed && !potentialType.IsGenericType && !potentialType.IsNested)
 				.SelectMany(extensionType => extensionType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
-				.Where(method => method.IsDefined(typeof(ExtensionAttribute), false))
+				.Where(method => method.IsExtension())
 				.ToArray();
 			}
 
 			return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType.IsAssignableFrom(type));
+		}
+
+		public static bool IsExtension(this MethodInfo methodInfo)
+		{
+			return methodInfo.IsDefined(typeof(ExtensionAttribute), false);
 		}
 	}
 }

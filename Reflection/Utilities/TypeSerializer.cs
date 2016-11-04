@@ -1,12 +1,10 @@
-﻿using UnityEngine;
-using System.Collections;
-using System;
+﻿using System;
 using System.Reflection;
 
 // Inspired from FullSerializer by Jacob Dufault
 // From file: Reflection/fsTypeLookup.cs
 
-namespace Ludiq.Reflection
+namespace Ludiq.Reflection.Internal
 {
 	/// <summary>
 	/// An utility class to simply serialize and deserialize .NET types in a Unity context.

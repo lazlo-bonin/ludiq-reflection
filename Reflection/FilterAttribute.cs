@@ -50,6 +50,11 @@ namespace Ludiq.Reflection
 		public bool Extension { get; set; }
 
 		/// <summary>
+		/// Whether to display methods with parameters.
+		/// </summary>
+		public bool Parameters { get; set; }
+
+		/// <summary>
 		/// The type families to display.
 		/// </summary>
 		public TypeFamily TypeFamilies { get; set; }
@@ -79,6 +84,7 @@ namespace Ludiq.Reflection
 			ReadOnly = true;
 			WriteOnly = true;
 			Extension = true;
+			Parameters = true;
 			TypeFamilies = TypeFamily.All;
 		}
 	}

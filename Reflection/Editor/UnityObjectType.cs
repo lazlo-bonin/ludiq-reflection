@@ -14,7 +14,7 @@
 		/// Multiple different types of objects
 		/// </summary>
 		Mixed,
-		
+
 		/// <summary>
 		/// Object is a GameObject
 		/// </summary>

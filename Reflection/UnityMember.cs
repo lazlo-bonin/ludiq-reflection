@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using Object = System.Object;
 using UnityObject = UnityEngine.Object;
 
 namespace Ludiq.Reflection
@@ -138,7 +137,7 @@ namespace Ludiq.Reflection
 
 					if (componentObject == null)
 					{
-						throw new UnityException(string.Format("Target object does not contain a component of type '{0}'.", component));
+						throw new UnityReflectionException(string.Format("Target object does not contain a component of type '{0}'.", component));
 					}
 
 					reflectionTarget = componentObject;
@@ -171,7 +170,7 @@ namespace Ludiq.Reflection
 				return;
 			}
 
-			throw new UnityException("Target should be a GameObject, a Component or a ScriptableObject.");
+			throw new UnityReflectionException("Target should be a GameObject, a Component or a ScriptableObject.");
 		}
 
 		/// <summary>
@@ -193,11 +192,22 @@ namespace Ludiq.Reflection
 		/// <summary>
 		/// Gathers the reflection target if it is not already present.
 		/// </summary>
-		protected void EnsureTargeted()
+		public void EnsureTargeted()
 		{
 			if (!isTargeted)
 			{
 				Target();
+			}
+		}
+
+		/// <summary>
+		/// Asserts that the member has been properly assigned.
+		/// </summary>
+		public void EnsureAssigned()
+		{
+			if (!isAssigned)
+			{
+				throw new UnityReflectionException("Member hasn't been properly assigned.");
 			}
 		}
 

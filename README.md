@@ -2,7 +2,7 @@
 
 A set of Unity classes and their inspector drawers that provide easy reflection and decoupling.
 
-This editor extension provides 3 new classes, `UnityVariable`, `UnityMethod` and `AnimatorParameter`, along with their custom drawers, that behave like Unity's built-in `UnityEvent` for fields, properties, methods and animator parameters reflection.
+This editor extension provides 4 new classes, `UnityVariable`, `UnityMethod`, `UnityGetter` and `AnimatorParameter`, along with their custom drawers, that behave like Unity's built-in `UnityEvent` for fields, properties, methods and animator parameters reflection.
 
 With them, you can easily refer to members of `Unity.Object` classes directly in the inspector and use them in scripting later. This allows for quick prototyping and decoupling for complex games and applications (albeit at a small performance cost).
 
@@ -163,6 +163,31 @@ public class AdvancedExample : MonoBehaviour
 }
 ```
 
+#### UnityGetter
+
+`UnityGetter` is a special reflection type that will only target members that *return* a specific type or set of types. It is meant to be used with the `[Filter]` attribute (see below). 
+
+For example, if you need to get an `int` variable from somewhere, but don't care whether it comes from a field, property or method, you could define and use a `UnityGetter` like so:
+
+```
+using UnityEngine;
+using Ludiq.Reflection;
+
+public class GetterExample : MonoBehaviour
+{
+	[Filter(typeof(int))]
+	public UnityGetter intGetter;
+    
+    void Start()
+    {
+    	var intValue = intGetter.Get<int>();
+        Debug.Log(intValue * 2);
+    }
+}
+```
+
+By default, `UnityGetter` includes methods with parameters. If you want to exclude them in the inspector, use `[Filter(Parameters = false)]`. If you don't, be aware that you'll have to manually deal with calling `Get(...)` with all the correct parameter types.
+
 #### Member Filtering
 
 You can specify which members will appear in the inspector using the `Filter` attribute. You can combine a number of options to display only the members you want. For example:
@@ -219,6 +244,7 @@ NonPublic	|Display private and protected members|false
 ReadOnly	|Display read-only properties and fields|true
 WriteOnly	|Display write-only properties and fields|true
 Extension	|Display extension methods|true
+Parameters	|Display methods with parameters|true
 TypeFamily|Determines which member type families are displayed|TypeFamily.All
 Types		|Determines which member types are displayed|*(Any)*
 
@@ -250,6 +276,7 @@ You can override the defaults by editing the inspector drawer classes and modify
 
 - For variables: `Reflection/Editor/UnityVariableDrawer.cs`
 - For methods: `Reflection/Editor/UnityMethodDrawer.cs`
+- For getters: `Reflection/Editor/UnityGetterDrawer.cs`
 
 For example, if you wanted to make non-public variables show up by default (without having to specify it with a `Filter` attribute), you could add the following line:
 
@@ -336,6 +363,30 @@ MethodInfo UnityVariable.methodInfo { get; }
 ```
 
 The underlying reflected method.
+
+##### UnityGetter.fieldInfo
+
+```csharp
+FieldInfo UnityGetter.fieldInfo { get; }
+```
+
+The underlying reflected field, or null if the variable is a property or a method.
+
+##### UnityGetter.propertyInfo
+
+```csharp
+PropertyInfo UnityGetter.propertyInfo { get; }
+```
+
+The underlying reflected property, or null if the getter is a field or a method.
+
+##### UnityGetter.methodInfo
+
+```csharp
+MethodInfo UnityGetter.methodInfo { get; }
+```
+
+The underlying reflected method, or null if the getter is a field or a property.
 
 ### Animator Parameters
 You can "reflect" animator parameters with the `AnimatorParameter` class. It supports the `SelfTargeted` attribute, but not the `Filter` attribute. Example:

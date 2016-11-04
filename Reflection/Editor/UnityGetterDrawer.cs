@@ -8,8 +8,8 @@ using UnityEditor;
 
 namespace Ludiq.Reflection.Editor
 {
-	[CustomPropertyDrawer(typeof(UnityMethod))]
-	public class UnityMethodDrawer : UnityMemberDrawer<UnityMethod>
+	[CustomPropertyDrawer(typeof(UnityGetter))]
+	public class UnityGetterDrawer : UnityMemberDrawer<UnityGetter>
 	{
 		#region Filtering
 
@@ -30,7 +30,7 @@ namespace Ludiq.Reflection.Editor
 		{
 			get
 			{
-				return MemberTypes.Method;
+				return MemberTypes.Field | MemberTypes.Property | MemberTypes.Method;
 			}
 		}
 
@@ -39,7 +39,22 @@ namespace Ludiq.Reflection.Editor
 		{
 			bool valid = base.ValidateMember(member);
 
-			valid &= UnityMemberDrawerHelper.ValidateMethod(filter, (MethodInfo)member);
+			FieldInfo field = member as FieldInfo;
+			PropertyInfo property = member as PropertyInfo;
+			MethodInfo method = member as MethodInfo;
+			
+			if (field != null) // Member is a field
+			{
+				valid &= UnityMemberDrawerHelper.ValidateField(filter, field);
+			}
+			else if (property != null) // Member is a property
+			{
+				valid &= UnityMemberDrawerHelper.ValidateProperty(filter, property);
+			}
+			else if (method != null) // Member is a method
+			{
+				valid &= UnityMemberDrawerHelper.ValidateMethod(filter, method);
+			}
 
 			return valid;
 		}
@@ -49,7 +64,7 @@ namespace Ludiq.Reflection.Editor
 		#region Fields
 
 		/// <summary>
-		/// The UnityMethod.parameterTypes of the inspected property, of type Type[].
+		/// The UnityGetter.parameterTypes of the inspected property, of type Type[].
 		/// </summary>
 		protected SerializedProperty parameterTypesProperty;
 
@@ -65,7 +80,7 @@ namespace Ludiq.Reflection.Editor
 		#region Value
 
 		/// <inheritdoc />
-		protected override void SetValue(UnityMethod value)
+		protected override void SetValue(UnityGetter value)
 		{
 			base.SetValue(value);
 
@@ -73,9 +88,9 @@ namespace Ludiq.Reflection.Editor
 		}
 
 		/// <inheritdoc />
-		protected override UnityMethod BuildValue(string component, string name)
+		protected override UnityGetter BuildValue(string component, string name)
 		{
-			return new UnityMethod(component, name, UnityMemberDrawerHelper.DeserializeParameterTypes(parameterTypesProperty));
+			return new UnityGetter(component, name, UnityMemberDrawerHelper.DeserializeParameterTypes(parameterTypesProperty));
 		}
 
 		/// <inheritdoc />
@@ -96,9 +111,9 @@ namespace Ludiq.Reflection.Editor
 
 		#region Reflection
 
-		protected override List<PopupOption<UnityMethod>> GetMemberOptions(Type type, string component = null)
+		protected override List<PopupOption<UnityGetter>> GetMemberOptions(Type type, string component = null)
 		{
-			var methods = base.GetMemberOptions(type, component);
+			var getters = base.GetMemberOptions(type, component);
 
 			if (filter.Extension)
 			{
@@ -106,24 +121,38 @@ namespace Ludiq.Reflection.Editor
 					.Where(ValidateMember)
 					.Select(method => GetMemberOption(method, component, method.GetParameters()[0].ParameterType != type));
 
-				methods.AddRange(extensionMethods);
+				getters.AddRange(extensionMethods);
 			}
 
-			return methods;
+			return getters;
 		}
 
-		protected override PopupOption<UnityMethod> GetMemberOption(MemberInfo member, string component, bool inherited)
+		protected override PopupOption<UnityGetter> GetMemberOption(MemberInfo member, string component, bool inherited)
 		{
-			UnityMethod value;
+			UnityGetter value;
 			string label;
 
-			if (member is MethodInfo)
+			if (member is FieldInfo)
+			{
+				FieldInfo field = (FieldInfo)member;
+
+				value = new UnityGetter(component, field.Name);
+				label = string.Format("{0} {1}", field.FieldType.PrettyName(), field.Name);
+			}
+			else if (member is PropertyInfo)
+			{
+				PropertyInfo property = (PropertyInfo)member;
+
+				value = new UnityGetter(component, property.Name);
+				label = string.Format("{0} {1}", property.PropertyType.PrettyName(), property.Name);
+			}
+			else if (member is MethodInfo)
 			{
 				MethodInfo method = (MethodInfo)member;
 
 				ParameterInfo[] parameters = method.GetParameters();
 
-				value = new UnityMethod(component, member.Name, parameters.Select(p => p.ParameterType).ToArray());
+				value = new UnityGetter(component, member.Name, parameters.Select(p => p.ParameterType).ToArray());
 
 				string parameterString = string.Join(", ", parameters.Select(p => p.ParameterType.PrettyName()).ToArray());
 
@@ -139,7 +168,7 @@ namespace Ludiq.Reflection.Editor
 				label = "Inherited/" + label;
 			}
 
-			return new PopupOption<UnityMethod>(value, label);
+			return new PopupOption<UnityGetter>(value, label);
 		}
 
 		#endregion
@@ -149,7 +178,7 @@ namespace Ludiq.Reflection.Editor
 		{
 			get
 			{
-				return "Method";
+				return "Getter";
 			}
 		}
 	}

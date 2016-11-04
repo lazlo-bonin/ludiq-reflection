@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using Ludiq.Reflection.Internal;
 using UnityObject = UnityEngine.Object;
 
 namespace Ludiq.Reflection
@@ -7,6 +8,15 @@ namespace Ludiq.Reflection
 	[Serializable]
 	public class UnityVariable : UnityMember
 	{
+		private enum SourceType
+		{
+			Unknown,
+			Field,
+			Property
+		}
+
+		private SourceType sourceType = SourceType.Unknown;
+
 		/// <summary>
 		/// The underlying reflected field, or null if the variable is a property.
 		/// </summary>
@@ -16,7 +26,7 @@ namespace Ludiq.Reflection
 		/// The underlying property field, or null if the variable is a field.
 		/// </summary>
 		public PropertyInfo propertyInfo { get; private set; }
-		
+
 		#region Constructors
 
 		public UnityVariable() { }
@@ -30,34 +40,27 @@ namespace Ludiq.Reflection
 		/// <inheritdoc />
 		public override void Reflect()
 		{
-#if !NETFX_CORE
-			if (!isAssigned)
-			{
-				throw new Exception("Field or property name not specified.");
-			}
-
+			EnsureAssigned();
 			EnsureTargeted();
 
-			Type type = reflectionTarget.GetType();
-			MemberTypes types = MemberTypes.Property | MemberTypes.Field;
-			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
+			fieldInfo = null;
+			propertyInfo = null;
+			sourceType = SourceType.Unknown;
 
-			MemberInfo[] variables = type.GetMember(name, types, flags);
+			var memberInfo = UnityMemberHelper.ReflectVariable(reflectionTarget, name);
+			fieldInfo = memberInfo as FieldInfo;
+			propertyInfo = memberInfo as PropertyInfo;
 
-			if (variables.Length == 0)
+			if (fieldInfo != null)
 			{
-				throw new Exception(string.Format("No matching field or property found: '{0}.{1}'", type.Name, name));
+				sourceType = SourceType.Field;
+			}
+			else if (propertyInfo != null)
+			{
+				sourceType = SourceType.Property;
 			}
 
-			MemberInfo variable = variables[0]; // Safe, because there can't possibly be more than one variable of the same name
-
-			fieldInfo = variable as FieldInfo;
-			propertyInfo = variable as PropertyInfo;
-
 			isReflected = true;
-#else
-			throw new Exception("UnityVariable is not supported in .NET Core.");
-#endif
 		}
 
 		/// <summary>
@@ -67,17 +70,12 @@ namespace Ludiq.Reflection
 		{
 			EnsureReflected();
 
-			if (fieldInfo != null)
+			switch (sourceType)
 			{
-				return fieldInfo.GetValue(reflectionTarget);
+				case SourceType.Field: return fieldInfo.GetValue(reflectionTarget);
+				case SourceType.Property: return propertyInfo.GetValue(reflectionTarget, null);
+				default: throw new UnityReflectionException();
 			}
-
-			if (propertyInfo != null)
-			{
-				return propertyInfo.GetValue(reflectionTarget, null);
-			}
-
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -95,19 +93,12 @@ namespace Ludiq.Reflection
 		{
 			EnsureReflected();
 
-			if (fieldInfo != null)
+			switch (sourceType)
 			{
-				fieldInfo.SetValue(reflectionTarget, value);
-				return;
+				case SourceType.Field: fieldInfo.SetValue(reflectionTarget, value); break;
+				case SourceType.Property: propertyInfo.SetValue(reflectionTarget, value, null); break;
+				default: throw new UnityReflectionException();
 			}
-
-			if (propertyInfo != null)
-			{
-				propertyInfo.SetValue(reflectionTarget, value, null);
-				return;
-			}
-
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -119,17 +110,12 @@ namespace Ludiq.Reflection
 			{
 				EnsureReflected();
 
-				if (fieldInfo != null)
+				switch (sourceType)
 				{
-					return fieldInfo.FieldType;
+					case SourceType.Field: return fieldInfo.FieldType;
+					case SourceType.Property: return propertyInfo.PropertyType;
+					default: throw new UnityReflectionException();
 				}
-
-				if (propertyInfo != null)
-				{
-					return propertyInfo.PropertyType;
-				}
-
-				throw new InvalidOperationException();
 			}
 		}
 

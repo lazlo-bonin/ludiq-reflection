@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ludiq.Reflection.Internal;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
@@ -67,71 +67,12 @@ namespace Ludiq.Reflection
 		/// <inheritdoc />
 		public override void Reflect()
 		{
-#if !NETFX_CORE
-			isExtension = false;
-
-			if (!isAssigned)
-			{
-				throw new Exception("Method name not specified.");
-			}
-
+			EnsureAssigned();
 			EnsureTargeted();
-
-			Type type = reflectionTarget.GetType();
-			BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
-
-			if (parameterTypes != null) // Explicit matching
-			{
-				methodInfo = type.GetMethod(name, flags, null, parameterTypes, null);
-
-				if (methodInfo == null)
-				{
-					methodInfo = type.GetExtensionMethods()
-						.Where(extension => extension.Name == name)
-						.Where(extension => Enumerable.SequenceEqual(extension.GetParameters().Select(paramInfo => paramInfo.ParameterType), parameterTypes))
-						.FirstOrDefault();
-
-					if (methodInfo != null)
-					{
-						isExtension = true;
-					}
-				}
-
-				if (methodInfo == null)
-				{
-					throw new Exception(string.Format("No matching method found: '{0}.{1} ({2})'", type.Name, name, string.Join(", ", parameterTypes.Select(t => t.Name).ToArray())));
-				}
-			}
-			else // Implicit matching
-			{
-				var normalMethods = type.GetMember(name, MemberTypes.Method, flags).OfType<MethodInfo>().ToList();
-				var extensionMethods = type.GetExtensionMethods().Where(extension => extension.Name == name).ToList();
-				var methods = new List<MethodInfo>();
-				methods.AddRange(normalMethods);
-				methods.AddRange(extensionMethods);
-
-				if (methods.Count == 0)
-				{
-					throw new Exception(string.Format("No matching method found: '{0}.{1}'", type.Name, name));
-				}
-
-				if (methods.Count > 1)
-				{
-					throw new Exception(string.Format("Multiple method signatures found for '{0}.{1}'\nSpecify the parameter types explicitly.", type.FullName, name));
-				}
-				
-				methodInfo = methods[0];
-
-				if (extensionMethods.Contains(methodInfo))
-				{
-					isExtension = true;
-				}
-			}
-
+			
+			methodInfo = UnityMemberHelper.ReflectMethod(reflectionTarget, name, parameterTypes);
+			isExtension = methodInfo.IsExtension();
 			isReflected = true;
-#else
-			throw new Exception("UnityMethod is not supported in .NET Core.");
-#endif
 		}
 
 		/// <summary>
@@ -141,15 +82,7 @@ namespace Ludiq.Reflection
 		{
 			EnsureReflected();
 
-			if (isExtension)
-			{
-				var fullParameters = new object[parameters.Length + 1];
-				fullParameters[0] = reflectionTarget;
-				Array.Copy(parameters, 0, fullParameters, 1, parameters.Length);
-				parameters = fullParameters;
-			}
-
-			return methodInfo.Invoke(reflectionTarget, parameters);
+			return UnityMemberHelper.InvokeMethod(reflectionTarget, methodInfo, isExtension, parameters);
 		}
 
 		/// <summary>
@@ -175,10 +108,10 @@ namespace Ludiq.Reflection
 
 		public override bool Corresponds(UnityMember other)
 		{
-			return 
-				other is UnityMethod && 
-				base.Corresponds(other) && 
-				this.parameterTypes.SequenceEqual(((UnityMethod)other).parameterTypes);
+			return
+				other is UnityMethod &&
+				base.Corresponds(other) &&
+				parameterTypes.SequenceEqual(((UnityMethod)other).parameterTypes);
 		}
 	}
 }

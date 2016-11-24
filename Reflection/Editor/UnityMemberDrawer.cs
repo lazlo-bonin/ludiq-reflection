@@ -187,28 +187,26 @@ namespace Ludiq.Reflection.Editor
 					}
 				}
 			}
-
-			// Make sure the callback uses the property of this drawer, not at its later value.
-			var propertyNow = property;
-
+			
 			bool enabled = targetType != UnityObjectType.None;
 
 			if (!enabled) EditorGUI.BeginDisabledGroup(true);
 
-			DropdownGUI<TMember>.PopupSingle
+			EditorGUI.BeginChangeCheck();
+
+			value = DropdownGUI<TMember>.PopupSingle
 			(
 				position,
-				newValue =>
-				{
-					Update(propertyNow);
-					SetValue(newValue);
-					propertyNow.serializedObject.ApplyModifiedProperties();
-				},
 				options,
 				selectedOption,
 				noneOption,
 				hasMultipleDifferentValues
 			);
+
+			if (EditorGUI.EndChangeCheck())
+			{
+				SetValue(value);
+			}
 
 			if (!enabled) EditorGUI.EndDisabledGroup();
 		}

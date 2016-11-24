@@ -26,7 +26,11 @@ namespace Ludiq.Reflection.Internal
 		{
 			// Look for the type if the default assembly
 
+#if (!UNITY_METRO)
 			Type type = Type.GetType(fullName, false, false);
+#else
+            Type type = Type.GetType(fullName, false); // Third argument not always supported
+#endif
 
 			if (type != null)
 			{

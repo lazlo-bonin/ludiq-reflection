@@ -83,52 +83,13 @@ namespace Ludiq.Reflection.Editor
 
 			// Display a list of all available reflected members in a popup.
 
-			var options = new List<DropdownOption<TMember>>();
-
 			TMember value = GetValue();
 
 			DropdownOption<TMember> selectedOption = null;
-			DropdownOption<TMember> noneOption = new DropdownOption<TMember>(null, string.Format("No {0}", memberLabel));
 
-			if (targetType == UnityObjectType.GameObject)
+			if (value != null)
 			{
-				// Check if all targets have a GameObject (none are empty).
-				// If they do, display all members of the GameObject type.
-
-				if (HasSharedGameObject())
-				{
-					var gameObjectOptions = GetSortedMemberOptions(typeof(GameObject));
-
-					foreach (var gameObjectOption in gameObjectOptions)
-					{
-						// Prefix label by GameObject for popup clarity.
-
-						gameObjectOption.label = string.Format("GameObject/{0}", gameObjectOption.label);
-
-						options.Add(gameObjectOption);
-					}
-				}
-
-				// Find all shared component types across targets.
-				// Display all members of each one found.
-
-				foreach (Type componentType in GetSharedComponentTypes())
-				{
-					var componentOptions = GetSortedMemberOptions(componentType, componentType.Name);
-
-					foreach (var componentOption in componentOptions)
-					{
-						// Prefix label and option by component type for clear distinction.
-
-						componentOption.label = string.Format("{0}/{1}", componentType.Name, componentOption.label);
-
-						options.Add(componentOption);
-					}
-				}
-
-				// Determine which option is currently selected.
-
-				if (value != null)
+				if (targetType == UnityObjectType.GameObject)
 				{
 					string label;
 
@@ -150,15 +111,77 @@ namespace Ludiq.Reflection.Editor
 						label += string.Format(" ({0})", parameterString);
 					}
 
-					TMember valueInOptions = options.Select(option => option.value).FirstOrDefault(member => member.Corresponds(value));
+					selectedOption = new DropdownOption<TMember>(value, label);
+				}
+				else if (targetType == UnityObjectType.ScriptableObject)
+				{
+					selectedOption = new DropdownOption<TMember>(value, value.name);
+				}
+			}
 
-					if (valueInOptions != null)
+			bool enabled = targetType != UnityObjectType.None;
+
+			if (!enabled) EditorGUI.BeginDisabledGroup(true);
+
+			EditorGUI.BeginChangeCheck();
+
+			EditorGUI.showMixedValue = nameProperty.hasMultipleDifferentValues;
+
+			value = DropdownGUI<TMember>.PopupSingle
+			(
+				position,
+				GetAllMemberOptions,
+				selectedOption,
+				new DropdownOption<TMember>(null, string.Format("No {0}", memberLabel))
+			);
+
+			EditorGUI.showMixedValue = false;
+
+			if (EditorGUI.EndChangeCheck())
+			{
+				SetValue(value);
+			}
+
+			if (!enabled) EditorGUI.EndDisabledGroup();
+		}
+
+		private List<DropdownOption<TMember>> GetAllMemberOptions()
+		{
+			var options = new List<DropdownOption<TMember>>();
+			
+			if (targetType == UnityObjectType.GameObject)
+			{
+				// Check if all targets have a GameObject (none are empty).
+				// If they do, display all members of the GameObject type.
+
+				if (HasSharedGameObject())
+				{
+					var gameObjectOptions = GetTypeMemberOptions(typeof(GameObject));
+
+					foreach (var gameObjectOption in gameObjectOptions)
 					{
-						selectedOption = new DropdownOption<TMember>(valueInOptions, label);
+						// Prefix label by GameObject for popup clarity.
+
+						gameObjectOption.label = string.Format("GameObject/{0}", gameObjectOption.label);
+
+						options.Add(gameObjectOption);
 					}
-					else
+				}
+
+				// Find all shared component types across targets.
+				// Display all members of each one found.
+
+				foreach (Type componentType in GetSharedComponentTypes())
+				{
+					var componentOptions = GetTypeMemberOptions(componentType, componentType.Name);
+
+					foreach (var componentOption in componentOptions)
 					{
-						selectedOption = new DropdownOption<TMember>(value, label);
+						// Prefix label and option by component type for clear distinction.
+
+						componentOption.label = string.Format("{0}/{1}", componentType.Name, componentOption.label);
+
+						options.Add(componentOption);
 					}
 				}
 			}
@@ -172,43 +195,21 @@ namespace Ludiq.Reflection.Editor
 
 				if (scriptableObjectType != null)
 				{
-					options.AddRange(GetSortedMemberOptions(scriptableObjectType));
-
-					// Determine which option is currently selected.
-
-					if (value != null)
-					{
-						selectedOption = options.Find(o => o.value.Corresponds(value));
-
-						if (selectedOption == null)
-						{
-							selectedOption = new DropdownOption<TMember>(value, value.name);
-						}
-					}
+					options.AddRange(GetTypeMemberOptions(scriptableObjectType));
 				}
 			}
 			
-			bool enabled = targetType != UnityObjectType.None;
+			// Sort the options
+			// TODO: Alphabetical somehow
 
-			if (!enabled) EditorGUI.BeginDisabledGroup(true);
+			var withoutSlashes = options.Where(o => !o.label.Contains("/")).ToList();
+			var withSlashes = options.Where(o => o.label.Contains("/")).ToList();
 
-			EditorGUI.BeginChangeCheck();
-
-			value = DropdownGUI<TMember>.PopupSingle
-			(
-				position,
-				options,
-				selectedOption,
-				noneOption,
-				hasMultipleDifferentValues
-			);
-
-			if (EditorGUI.EndChangeCheck())
-			{
-				SetValue(value);
-			}
-
-			if (!enabled) EditorGUI.EndDisabledGroup();
+			options.Clear();
+			options.AddRange(withSlashes);
+			options.AddRange(withoutSlashes);
+			
+			return options;
 		}
 
 		#region Value
@@ -401,7 +402,7 @@ namespace Ludiq.Reflection.Editor
 		/// <summary>
 		/// Gets the list of members available on a type as popup options.
 		/// </summary>
-		protected virtual List<DropdownOption<TMember>> GetMemberOptions(Type type, string component = null)
+		protected virtual List<DropdownOption<TMember>> GetTypeMemberOptions(Type type, string component = null)
 		{
 			return type
 				.GetMembers(validBindingFlags)
@@ -410,24 +411,7 @@ namespace Ludiq.Reflection.Editor
 				.Select(member => GetMemberOption(member, component, member.DeclaringType != type))
 				.ToList();
 		}
-
-		/// <summary>
-		/// Gets the sorted list of members available on a type as popup options.
-		/// </summary>
-		protected virtual List<DropdownOption<TMember>> GetSortedMemberOptions(Type type, string component = null)
-		{
-			var options = GetMemberOptions(type, component);
-
-			var withoutSlashes = options.Where(o => !o.label.Contains("/")).ToList();
-			var withSlashes = options.Where(o => o.label.Contains("/")).ToList();
-
-			options.Clear();
-			options.AddRange(withSlashes);
-			options.AddRange(withoutSlashes);
-
-			return options;
-		}
-
+		
 		protected abstract DropdownOption<TMember> GetMemberOption(MemberInfo member, string component, bool inherited);
 
 		#endregion

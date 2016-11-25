@@ -111,7 +111,7 @@ namespace Ludiq.Reflection
 
 			isReflected = true;
 		}
-		
+
 		/// <summary>
 		/// Retrieves the value of the getter.
 		/// </summary>
@@ -155,18 +155,12 @@ namespace Ludiq.Reflection
 			}
 		}
 
-		public override bool Corresponds(UnityMember other)
+		public override bool Equals(object obj)
 		{
-			var corresponds = other is UnityGetter && base.Corresponds(other);
-			
-			corresponds &= (parameterTypes == null) == (((UnityGetter)other).parameterTypes == null);
+			var other = obj as UnityGetter;
 
-			if (parameterTypes != null)
-			{
-				corresponds &= parameterTypes.SequenceEqual(((UnityGetter)other).parameterTypes);
-			}
-
-			return corresponds;
+			return base.Equals(other) &&
+				(other.parameterTypes == null || parameterTypes.SequenceEqual(other.parameterTypes));
 		}
 	}
 }

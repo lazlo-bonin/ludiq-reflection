@@ -111,9 +111,9 @@ namespace Ludiq.Reflection.Editor
 
 		#region Reflection
 
-		protected override List<DropdownOption<UnityGetter>> GetMemberOptions(Type type, string component = null)
+		protected override List<DropdownOption<UnityGetter>> GetTypeMemberOptions(Type type, string component = null)
 		{
-			var getters = base.GetMemberOptions(type, component);
+			var getters = base.GetTypeMemberOptions(type, component);
 
 			if (filter.Extension)
 			{

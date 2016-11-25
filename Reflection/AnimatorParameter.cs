@@ -186,11 +186,14 @@ namespace Ludiq.Reflection
 				}
 			}
 		}
-
-		public bool Corresponds(AnimatorParameter other)
+		
+		// Overriden for comparison in the dropdowns
+		public override bool Equals(object obj)
 		{
+			var other = obj as AnimatorParameter;
+
 			return
-				(other != null || !this.isAssigned) &&
+				other != null &&
 				this.target == other.target &&
 				this.name == other.name;
 		}

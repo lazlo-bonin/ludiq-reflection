@@ -211,10 +211,13 @@ namespace Ludiq.Reflection
 			}
 		}
 
-		public virtual bool Corresponds(UnityMember other)
+		// Overriden for comparison in the dropdowns
+		public override bool Equals(object obj)
 		{
+			var other = obj as UnityMember;
+
 			return
-				(other != null || !this.isAssigned) &&
+				other != null &&
 				this.target == other.target &&
 				this.component == other.component &&
 				this.name == other.name;

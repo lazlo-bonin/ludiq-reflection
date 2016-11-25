@@ -47,44 +47,27 @@ namespace Ludiq.Reflection.Editor
 		/// <inheritdoc />
 		protected override void RenderMemberControl(Rect position)
 		{
-			var options = GetNameOptions();
-
-			DropdownOption<AnimatorParameter> selectedOption = null;
-			DropdownOption<AnimatorParameter> noneOption = new DropdownOption<AnimatorParameter>(null, "No Parameter");
-
-			AnimatorParameter value = GetValue();
-
-			if (value != null)
-			{
-				string label = value.name;
-
-				AnimatorParameter valueInOptions = options.Select(option => option.value).FirstOrDefault(ap => ap.Corresponds(value));
-
-				if (valueInOptions != null)
-				{
-					selectedOption = new DropdownOption<AnimatorParameter>(valueInOptions, label);
-				}
-				else
-				{
-					selectedOption = new DropdownOption<AnimatorParameter>(value, label);
-				}
-
-			}
-			
 			bool enabled = targets.Any(target => target != null);
 
 			if (!enabled) EditorGUI.BeginDisabledGroup(true);
 
 			EditorGUI.BeginChangeCheck();
 
+			EditorGUI.showMixedValue = nameProperty.hasMultipleDifferentValues;
+
+			var value = GetValue();
+			
+			var selectedOption = value != null ? new DropdownOption<AnimatorParameter>(value, value.name) : null;
+
 			value = DropdownGUI<AnimatorParameter>.PopupSingle
 			(
 				position,
-				options,
+				GetNameOptions,
 				selectedOption,
-				noneOption,
-				nameProperty.hasMultipleDifferentValues
+				new DropdownOption<AnimatorParameter>(null, "No Parameter")
 			);
+
+			EditorGUI.showMixedValue = false;
 
 			if (EditorGUI.EndChangeCheck())
 			{

@@ -119,9 +119,11 @@ namespace Ludiq.Reflection
 			}
 		}
 
-		public override bool Corresponds(UnityMember other)
+		public override bool Equals(object obj)
 		{
-			return other is UnityVariable && base.Corresponds(other);
+			var other = obj as UnityVariable;
+
+			return base.Equals(other);
 		}
 	}
 }

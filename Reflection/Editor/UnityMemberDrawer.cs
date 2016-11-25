@@ -14,6 +14,7 @@ namespace Ludiq.Reflection.Editor
 	public class UnityMemberDrawer : TargetedDrawer
 	{
 		internal static FilterAttribute filterOverride;
+		internal static bool? labelTypeAfterOverride;
 
 		#region Fields
 
@@ -75,7 +76,7 @@ namespace Ludiq.Reflection.Editor
 			filter = filterOverride ?? (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? new FilterAttribute();
 
 			// Check for the label type after attribute
-			labelTypeAfter = fieldInfo.IsDefined(typeof(LabelTypeAfterAttribute), true);
+			labelTypeAfter = labelTypeAfterOverride ?? fieldInfo.IsDefined(typeof(LabelTypeAfterAttribute), true);
 
 			// Find the targets
 			targets = FindTargets();

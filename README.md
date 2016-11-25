@@ -2,7 +2,7 @@
 
 A set of Unity classes and their inspector drawers that provide easy reflection and decoupling.
 
-This editor extension provides 4 new classes, `UnityVariable`, `UnityMethod`, `UnityGetter` and `AnimatorParameter`, along with their custom drawers, that behave like Unity's built-in `UnityEvent` for fields, properties, methods and animator parameters reflection.
+This editor extension provides 2 new classes, `UnityMember` and `AnimatorParameter`, along with their custom drawers, that behave like Unity's built-in `UnityEvent` for fields, properties, methods and animator parameters reflection.
 
 With them, you can easily refer to members of `Unity.Object` classes directly in the inspector and use them in scripting later. This allows for quick prototyping and decoupling for complex games and applications (albeit at a small performance cost).
 
@@ -15,6 +15,8 @@ It's easier to explain it with pictures:
 Inspector view:
 
 ![Inspector](http://i.imgur.com/DANkdON.png)
+
+(Note: These screenshots are outdated; `UnityMethod` and `UnityVariable` are now unified in `UnityMember`)
 
 ### Features
 
@@ -40,10 +42,11 @@ You're good to go!
 ## Usage
 
 1. Create a behaviour script
-2. Add `using Ludiq.Reflection;` to your namespaces.
-2. Add a `UnityVariable` or `UnityMethod` as a public member
-3. Set your bindings in the inspector
-4. Access the variables and methods directly from your script!
+2. Add `using Ludiq.Reflection;` to your namespaces
+2. Add a `UnityMember` as a public member
+3. Add a `[Filter]` attribute to choose which members are shown
+4. Set your bindings in the inspector
+5. Access the variables and methods directly from your script!
 
 Here's a simple example that will display the value of any method and any variable on start:
 ```csharp
@@ -52,9 +55,11 @@ using Ludiq.Reflection;
 
 public class BasicExample : MonoBehaviour
 {
-	public UnityMethod method;
+	[Filter(Methods = true)]
+	public UnityMember method;
 
-	public UnityVariable variable;
+	[Filter(Fields = true, Properties = true)]
+	public UnityMember variable;
 
 	void Start()
 	{
@@ -65,59 +70,68 @@ public class BasicExample : MonoBehaviour
 ```
 
 ### Basic Usage
-There are 3 commonly used methods to deal with reflected members. Each are described below.
 
-`Get` and `Invoke` also have typed generic equivalents that will attempt a cast.
-
-##### UnityVariable.Get
+##### UnityMember.Get
 
 ```csharp
-object UnityVariable.Get()
+object UnityMember.Get()
+T UnityMember.Get<T>()
 ```
 
 Retrieves the value of the variable.
 
-##### UnityVariable.Set
+##### UnityMember.Set
 
 ```csharp
-void UnityVariable.Set(object value)
+void UnityMember.Set(object value)
 ```
 
 Assigns a new value to the variable.
 
-##### UnityMethod.Invoke
+##### UnityMember.Invoke
 
 ```csharp
-object UnityMethod.Invoke(params object[] args)
+object UnityMember.Invoke(params object[] arguments)
+T UnityMember.Invoke<T>(params object[] arguments)
 ```
 
 Invokes the method with any number of arguments of any type and returns its return value, or null if there isn't any (void).
 
----
-
-You can also get the type of the reflected member using the following shortcuts:
-
-##### UnityVariable.type
+##### UnityMember.GetOrInvoke
 
 ```csharp
-Type UnityVariable.type { get; }
+object UnityMember.GetOrInvoke(params object[] arguments)
+T UnityMember.GetOrInvoke<T>(params object[] arguments)
 ```
 
-The field or property type of the reflected variable.
+If the member is a field or property, retrieves its value. If the member is a method, invokes it with any number of arguments of any type and returns its return value, or null if there isn't any (void).
 
-##### UnityMethod.returnType
+This method is usually combined with `[Filter(Gettable = true)]`.
+
+##### UnityMember.InvokeOrSet
 
 ```csharp
-Type UnityMethod.returnType { get; }
+object UnityMember.InvokeOrSet(params object[] argumentsOrValue)
+T UnityMember.InvokeOrSet<T>(params object[] argumentsOrValue)
 ```
 
-The return type of the reflected method.
+If the member is a method, invokes it with any number of arguments of any type and returns its return value, or null if there isn't any (void). If the member is a field or property, sets its value to the first argument and returns null.
+
+This method is usually combined with `[Filter(Methods = true, Settable = true)]`.
+
+##### UnityMember.type
+
+```csharp
+Type UnityMember.type { get; }
+```
+
+The type of the reflected field or property or return type of the reflected method.
 
 ---
 
 #### Assignment Check
 
-Unfortunately, the Unity inspector doesn't allow for `null` values to be assigned to properties. If you want to know if a `UnityMember` has been properly assigned (e.g. not "No Variable" or "No Method" in the inspector), use the `isAssigned` indicator:
+Unfortunately, the Unity inspector doesn't allow for `null` values to be assigned to properties. If you want to know if a `UnityMember` has been properly assigned (e.g. not "Nothing" in the inspector), use the `isAssigned` indicator:
 
 ```csharp
 using UnityEngine;
@@ -125,7 +139,8 @@ using Ludiq.Reflection;
 
 public class AssignmentExample : MonoBehaviour
 {
-	public UnityVariable variable;
+	[Filter(Fields = true, Properties = true)]
+	public UnityMember variable;
 
 	void Start()
 	{
@@ -158,35 +173,10 @@ using Ludiq.Reflection;
 
 public class AdvancedExample : MonoBehaviour
 {
-	[SelfTargeted]
-	public UnityVariable selfVariable;
+	[SelfTargeted, Filter(Methods = true)]
+	public UnityMember selfMethod;
 }
 ```
-
-#### UnityGetter
-
-`UnityGetter` is a special reflection type that will only target members that *return* a specific type or set of types. It is meant to be used with the `[Filter]` attribute (see below). 
-
-For example, if you need to get an `int` variable from somewhere, but don't care whether it comes from a field, property or method, you could define and use a `UnityGetter` like so:
-
-```
-using UnityEngine;
-using Ludiq.Reflection;
-
-public class GetterExample : MonoBehaviour
-{
-	[Filter(typeof(int))]
-	public UnityGetter intGetter;
-    
-    void Start()
-    {
-    	var intValue = intGetter.Get<int>();
-        Debug.Log(intValue * 2);
-    }
-}
-```
-
-By default, `UnityGetter` includes methods with parameters. If you want to exclude them in the inspector, use `[Filter(Parameters = false)]`. If you don't, be aware that you'll have to manually deal with calling `Get(...)` with all the correct parameter types.
 
 #### Member Filtering
 
@@ -198,41 +188,51 @@ using Ludiq.Reflection;
 
 public class AdvancedExample : MonoBehaviour
 {
-    // Only show variables of type Transform
-    [Filter(typeof(Transform))]
-    public UnityVariable transformVariable;
+    // Only show fields of type Transform
+    [Filter(typeof(Transform), Fields = true)]
+    public UnityMember transformField;
 
     // Only show methods that return an integer or a float
-    [Filter(typeof(int), typeof(float))]
-    public UnityMethod numericMethod;
+    [Filter(typeof(int), typeof(float), Methods = true)]
+    public UnityMember numericMethod;
 
     // Only show methods that return primitives or enums
-    [Filter(TypeFamily = TypeFamily.Primitive | TypeFamily.Enum)]
-    public UnityMethod primitiveOrEnumMethod;
+    [Filter(Methods = true, TypeFamily = TypeFamily.Primitive | TypeFamily.Enum)]
+    public UnityMember primitiveOrEnumMethod;
 
 	// Only show static methods
-	[Filter(Static = true, Instance = false)]
-	public UnityMethod staticMethod;
+	[Filter(Methods = true, Static = true, Instance = false)]
+	public UnityMember staticMethod;
 
-	// Include non-public variables
-    [Filter(NonPublic = true)]
-	public UnityVariable hiddenVariable;
+	// Include non-public properties
+    [Filter(Properties = true, NonPublic = true)]
+	public UnityMember hiddenProperty;
 
     // Exclude readonly properties
-    [Filter(ReadOnly = false)]
-    public UnityVariable writableVariable;
+    [Filter(Properties = true, ReadOnly = false)]
+    public UnityMember writableProperty;
 
     // Include methods that are defined in the object's hierarchy
-    [Filter(Inherited = true)]
-    public UnityMethod definedMethod;
+    [Filter(Methods = true, Inherited = true)]
+    public UnityMember definedMethod;
 
     // Combine any of the above options
-    [Filter(typeof(Collider), Static = true, ReadOnly = false)]
-    public UnityVariable colliderVariable;
+    [Filter(typeof(Collider), Fields = true, Static = true, ReadOnly = false)]
+    public UnityMember colliderVariable;
 }
 ```
 
-The available options are:
+You should always enable at least one of the following options:
+
+Option		| Description
+------------|------------
+Fields		|Display fields
+Properties	|Display properties
+Methods		|Display methods
+Gettable	|Display fields, properties with a getter and methods with a return type
+Settable	|Display fields and properties with a setter
+
+The additional optional options are:
 
 Option		| Description | Default
 ------------|-------------|--------
@@ -245,7 +245,7 @@ ReadOnly	|Display read-only properties and fields|true
 WriteOnly	|Display write-only properties and fields|true
 Extension	|Display extension methods|true
 Parameters	|Display methods with parameters|true
-TypeFamily|Determines which member type families are displayed|TypeFamily.All
+TypeFamily	|Determines which member type families are displayed|TypeFamily.All
 Types		|Determines which member types are displayed|*(Any)*
 
 
@@ -270,42 +270,9 @@ You can combine them with the bitwise or operator:
 TypeFamily enumsOrInterfaces = TypeFamily.Enum | TypeFamily.Interface;
 ```
 
-#### Overriding Defaults
+#### Changing Defaults
 
-You can override the defaults by editing the inspector drawer classes and modifying the `DefaultFilter()` method.
-
-- For variables: `Reflection/Editor/UnityVariableDrawer.cs`
-- For methods: `Reflection/Editor/UnityMethodDrawer.cs`
-- For getters: `Reflection/Editor/UnityGetterDrawer.cs`
-
-For example, if you wanted to make non-public variables show up by default (without having to specify it with a `Filter` attribute), you could add the following line:
-
-```csharp
-using System.Reflection;
-using UnityEditor;
-
-namespace Ludiq.Reflection
-{
-	[CustomPropertyDrawer(typeof(UnityVariable))]
-	public class UnityVariableDrawer : UnityMemberDrawer
-	{
-		...
-
-		protected override FilterAttribute DefaultFilter()
-		{
-			FilterAttribute filter = base.DefaultFilter();
-
-			// Override defaults here
-			filter.Inherited = true;
-            filter.NonPublic = true;
-
-			return filter;
-		}
-
-        ...
-    }
-}
-```
+You can change the filter defaults by editing the the `FilterAttribute` constructor in `Reflection/FilterAttribute.cs`.
 
 #### Creating from script
 
@@ -317,20 +284,21 @@ using Ludiq.Reflection;
 
 public class ScriptExample : MonoBehaviour
 {
-	public UnityVariable inspectorVariable;
+	[Filter(Fields = true, Properties = true)]
+	public UnityMember inspectorVariable;
 
 	void Start()
 	{
 		// Print the transform's position
-		var variable = new UnityVariable("Transform", "position", gameObject);
+		var variable = new UnityMember("Transform", "position", gameObject);
 		Debug.Log(variable.Get());
 
 		// Call SetActive directly on the GameObject
-		var method = new UnityMethod("SetActive", gameObject);
+		var method = new UnityMember("SetActive", gameObject);
 		method.Invoke(false);
 
 		// Modify a variable assigned from the inspector
-		inspectorVariable = new UnityVariable("Transform", "Rotation", inspectorVariable.target);
+		inspectorVariable = new UnityMember("Transform", "Rotation", inspectorVariable.target);
 		Debug.Log(inspectorVariable.Get());
 	}
 }
@@ -340,50 +308,26 @@ public class ScriptExample : MonoBehaviour
 
 If you want to directly access the `System.Reflection` objects, you can do so using the following properties. Note that you must previously have reflected the member, either manually via `UnityMember.Reflect()`, or automatically by accessing / invoking it.
 
-##### UnityVariable.fieldInfo
+##### UnityMember.fieldInfo
 
 ```csharp
-FieldInfo UnityVariable.fieldInfo { get; }
-```
-
-The underlying reflected field, or null if the variable is a property.
-
-##### UnityVariable.propertyInfo
-
-```csharp
-PropertyInfo UnityVariable.propertyInfo { get; }
-```
-
-The underlying reflected property, or null if the variable is a field.
-
-##### UnityMethod.methodInfo
-
-```csharp
-MethodInfo UnityVariable.methodInfo { get; }
-```
-
-The underlying reflected method.
-
-##### UnityGetter.fieldInfo
-
-```csharp
-FieldInfo UnityGetter.fieldInfo { get; }
+FieldInfo UnityMember.fieldInfo { get; }
 ```
 
 The underlying reflected field, or null if the variable is a property or a method.
 
-##### UnityGetter.propertyInfo
+##### UnityMember.propertyInfo
 
 ```csharp
-PropertyInfo UnityGetter.propertyInfo { get; }
+PropertyInfo UnityMember.propertyInfo { get; }
 ```
 
 The underlying reflected property, or null if the getter is a field or a method.
 
-##### UnityGetter.methodInfo
+##### UnityMember.methodInfo
 
 ```csharp
-MethodInfo UnityGetter.methodInfo { get; }
+MethodInfo UnityMember.methodInfo { get; }
 ```
 
 The underlying reflected method, or null if the getter is a field or a property.

@@ -46,21 +46,28 @@ namespace Ludiq.Reflection.Internal
 		/// <summary>
 		/// Searches all assemblies for extension methods for a given type.
 		/// </summary>
-		public static IEnumerable<MethodInfo> GetExtensionMethods(this Type type)
+		public static IEnumerable<MethodInfo> GetExtensionMethods(this Type type, bool inherited = true)
 		{
 			// http://stackoverflow.com/a/299526
 
 			if (extensionMethodsCache == null)
 			{
 				extensionMethodsCache = AppDomain.CurrentDomain.GetAssemblies()
-				.SelectMany(assembly => assembly.GetTypes())
-				.Where(potentialType => potentialType.IsSealed && !potentialType.IsGenericType && !potentialType.IsNested)
-				.SelectMany(extensionType => extensionType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
-				.Where(method => method.IsExtension())
-				.ToArray();
+					.SelectMany(assembly => assembly.GetTypes())
+					.Where(potentialType => potentialType.IsSealed && !potentialType.IsGenericType && !potentialType.IsNested)
+					.SelectMany(extensionType => extensionType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+					.Where(method => method.IsExtension())
+					.ToArray();
 			}
 
-			return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType.IsAssignableFrom(type));
+			if (inherited)
+			{
+				return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType.IsAssignableFrom(type));
+			}
+			else
+			{
+				return extensionMethodsCache.Where(method => method.GetParameters()[0].ParameterType == type);
+			}
 		}
 
 		public static bool IsExtension(this MethodInfo methodInfo)

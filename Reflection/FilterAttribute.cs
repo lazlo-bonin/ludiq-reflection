@@ -10,6 +10,31 @@ namespace Ludiq.Reflection
 	public sealed class FilterAttribute : Attribute
 	{
 		/// <summary>
+		/// Whether to display fields.
+		/// </summary>
+		public bool Fields { get; set; }
+
+		/// <summary>
+		/// Whether to display properties.
+		/// </summary>
+		public bool Properties { get; set; }
+
+		/// <summary>
+		/// Whether to display methods.
+		/// </summary>
+		public bool Methods { get; set; }
+
+		/// <summary>
+		/// Whether to display fields, properties with a getter and methods with a return type.
+		/// </summary>
+		public bool Gettable { get; set; }
+
+		/// <summary>
+		/// Whether to display fields and properties with a setter.
+		/// </summary>
+		public bool Settable { get; set; }
+
+		/// <summary>
 		/// Whether to display members defined in the types's ancestors.
 		/// </summary>
 		public bool Inherited { get; set; }
@@ -50,6 +75,11 @@ namespace Ludiq.Reflection
 		public bool Extension { get; set; }
 
 		/// <summary>
+		/// Whether to display setters in methods.
+		/// </summary>
+		public bool Setters { get; set; }
+
+		/// <summary>
 		/// Whether to display methods with parameters.
 		/// </summary>
 		public bool Parameters { get; set; }
@@ -75,6 +105,12 @@ namespace Ludiq.Reflection
 		public FilterAttribute(params Type[] types)
 		{
 			this.types = new List<Type>(types);
+
+			Fields = false;
+			Properties = false;
+			Methods = false;
+			Gettable = false;
+			Settable = false;
 
 			Inherited = false;
 			Instance = true;

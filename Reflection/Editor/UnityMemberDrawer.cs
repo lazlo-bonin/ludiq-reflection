@@ -11,7 +11,7 @@ using UnityObject = UnityEngine.Object;
 namespace Ludiq.Reflection.Editor
 {
 	[CustomPropertyDrawer(typeof(UnityMember))]
-	public abstract class UnityMemberDrawer<TMember> : TargetedDrawer where TMember : UnityMember
+	public class UnityMemberDrawer : TargetedDrawer
 	{
 		internal static FilterAttribute filterOverride;
 
@@ -38,6 +38,11 @@ namespace Ludiq.Reflection.Editor
 		protected SerializedProperty nameProperty;
 
 		/// <summary>
+		/// The UnityMethod.parameterTypes of the inspected property, of type Type[].
+		/// </summary>
+		protected SerializedProperty parameterTypesProperty;
+
+		/// <summary>
 		/// The targeted Unity Objects.
 		/// </summary>
 		protected UnityObject[] targets;
@@ -59,9 +64,10 @@ namespace Ludiq.Reflection.Editor
 			this.property = property;
 			componentProperty = property.FindPropertyRelative("_component");
 			nameProperty = property.FindPropertyRelative("_name");
+			parameterTypesProperty = property.FindPropertyRelative("_parameterTypes");
 
 			// Fetch the filter
-			filter = filterOverride ?? (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? DefaultFilter();
+			filter = filterOverride ?? (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? new FilterAttribute();
 
 			// Find the targets
 			targets = FindTargets();
@@ -83,9 +89,9 @@ namespace Ludiq.Reflection.Editor
 
 			// Display a list of all available reflected members in a popup.
 
-			TMember value = GetValue();
+			UnityMember value = GetValue();
 
-			DropdownOption<TMember> selectedOption = null;
+			DropdownOption<UnityMember> selectedOption = null;
 
 			if (value != null)
 			{
@@ -102,20 +108,25 @@ namespace Ludiq.Reflection.Editor
 						label = string.Format("{0}.{1}", value.component, value.name);
 					}
 
-					UnityMethod method = value as UnityMethod;
+					// There seems to be no way of differentiating between null parameter types
+					// (fields, properties and implicitly typed methods) and zero parameter types
+					// because Unity's serialized property array cannot be assigned to null, only
+					// given an array size of zero.
 
-					if (method != null)
+					// TODO: The solution would be to use a single comma-separated
+					// string instead of an array of strings, which we could differentiate manually.
+					if (value.parameterTypes != null && value.parameterTypes.Length > 0)
 					{
-						string parameterString = string.Join(", ", method.parameterTypes.Select(t => t.PrettyName()).ToArray());
+						string parameterString = string.Join(", ", value.parameterTypes.Select(t => t.PrettyName()).ToArray());
 
 						label += string.Format(" ({0})", parameterString);
 					}
 
-					selectedOption = new DropdownOption<TMember>(value, label);
+					selectedOption = new DropdownOption<UnityMember>(value, label);
 				}
 				else if (targetType == UnityObjectType.ScriptableObject)
 				{
-					selectedOption = new DropdownOption<TMember>(value, value.name);
+					selectedOption = new DropdownOption<UnityMember>(value, value.name);
 				}
 			}
 
@@ -127,12 +138,12 @@ namespace Ludiq.Reflection.Editor
 
 			EditorGUI.showMixedValue = nameProperty.hasMultipleDifferentValues;
 
-			value = DropdownGUI<TMember>.PopupSingle
+			value = DropdownGUI<UnityMember>.PopupSingle
 			(
 				position,
 				GetAllMemberOptions,
 				selectedOption,
-				new DropdownOption<TMember>(null, string.Format("No {0}", memberLabel))
+				new DropdownOption<UnityMember>(null, string.Format("Nothing"))
 			);
 
 			EditorGUI.showMixedValue = false;
@@ -145,10 +156,10 @@ namespace Ludiq.Reflection.Editor
 			if (!enabled) EditorGUI.EndDisabledGroup();
 		}
 
-		private List<DropdownOption<TMember>> GetAllMemberOptions()
+		private List<DropdownOption<UnityMember>> GetAllMemberOptions()
 		{
-			var options = new List<DropdownOption<TMember>>();
-			
+			var options = new List<DropdownOption<UnityMember>>();
+
 			if (targetType == UnityObjectType.GameObject)
 			{
 				// Check if all targets have a GameObject (none are empty).
@@ -198,7 +209,7 @@ namespace Ludiq.Reflection.Editor
 					options.AddRange(GetTypeMemberOptions(scriptableObjectType));
 				}
 			}
-			
+
 			// Sort the options
 			// TODO: Alphabetical somehow
 
@@ -208,22 +219,17 @@ namespace Ludiq.Reflection.Editor
 			options.Clear();
 			options.AddRange(withSlashes);
 			options.AddRange(withoutSlashes);
-			
+
 			return options;
 		}
 
 		#region Value
-
-		/// <summary>
-		/// Constructs a new instance of the member from the specified component and name.
-		/// </summary>
-		protected abstract TMember BuildValue(string component, string name);
-
+		
 		/// <summary>
 		/// Returns a member constructed from the current parameter values.
 		/// </summary>
 		/// <returns></returns>
-		protected TMember GetValue()
+		protected UnityMember GetValue()
 		{
 			if (hasMultipleDifferentValues ||
 				string.IsNullOrEmpty(nameProperty.stringValue))
@@ -233,27 +239,31 @@ namespace Ludiq.Reflection.Editor
 
 			string component = componentProperty.stringValue;
 			string name = nameProperty.stringValue;
+			Type[] parameterTypes = UnityMemberDrawerHelper.DeserializeParameterTypes(parameterTypesProperty);
 
 			if (component == string.Empty) component = null;
 			if (name == string.Empty) name = null;
+			// Cannot reliably determine if parameterTypes should be null; see other TODO note for selectedOption.
 
-			return BuildValue(component, name);
+			return new UnityMember(component, name, parameterTypes);
 		}
 
 		/// <summary>
 		/// Assigns the property values from a specified member.
 		/// </summary>
-		protected virtual void SetValue(TMember value)
+		protected virtual void SetValue(UnityMember value)
 		{
 			if (value != null)
 			{
 				componentProperty.stringValue = value.component;
 				nameProperty.stringValue = value.name;
+				UnityMemberDrawerHelper.SerializeParameterTypes(parameterTypesProperty, value.parameterTypes);
 			}
 			else
 			{
 				componentProperty.stringValue = null;
 				nameProperty.stringValue = null;
+				parameterTypesProperty.arraySize = 0;
 			}
 		}
 
@@ -264,7 +274,10 @@ namespace Ludiq.Reflection.Editor
 		{
 			get
 			{
-				return componentProperty.hasMultipleDifferentValues || nameProperty.hasMultipleDifferentValues;
+				return
+					componentProperty.hasMultipleDifferentValues ||
+					nameProperty.hasMultipleDifferentValues ||
+					UnityMemberDrawerHelper.ParameterTypesHasMultipleValues(parameterTypesProperty);
 			}
 		}
 
@@ -402,40 +415,74 @@ namespace Ludiq.Reflection.Editor
 		/// <summary>
 		/// Gets the list of members available on a type as popup options.
 		/// </summary>
-		protected virtual List<DropdownOption<TMember>> GetTypeMemberOptions(Type type, string component = null)
+		protected virtual List<DropdownOption<UnityMember>> GetTypeMemberOptions(Type type, string component = null)
 		{
-			return type
+			var options = type
 				.GetMembers(validBindingFlags)
 				.Where(member => validMemberTypes.HasFlag(member.MemberType))
 				.Where(ValidateMember)
 				.Select(member => GetMemberOption(member, component, member.DeclaringType != type))
 				.ToList();
+
+			if (filter.Extension)
+			{
+				var extensionMethods = type.GetExtensionMethods(filter.Inherited)
+					.Where(ValidateMember)
+					.Select(method => GetMemberOption(method, component, filter.Inherited && method.GetParameters()[0].ParameterType != type));
+
+				options.AddRange(extensionMethods);
+			}
+
+			return options;
 		}
-		
-		protected abstract DropdownOption<TMember> GetMemberOption(MemberInfo member, string component, bool inherited);
+
+		protected DropdownOption<UnityMember> GetMemberOption(MemberInfo member, string component, bool inherited)
+		{
+			UnityMember value;
+			string label;
+
+			if (member is FieldInfo)
+			{
+				FieldInfo field = (FieldInfo)member;
+
+				value = new UnityMember(component, field.Name);
+				label = string.Format("{0} {1}", field.FieldType.PrettyName(), field.Name);
+			}
+			else if (member is PropertyInfo)
+			{
+				PropertyInfo property = (PropertyInfo)member;
+
+				value = new UnityMember(component, property.Name);
+				label = string.Format("{0} {1}", property.PropertyType.PrettyName(), property.Name);
+			}
+			else if (member is MethodInfo)
+			{
+				MethodInfo method = (MethodInfo)member;
+
+				ParameterInfo[] parameters = method.GetParameters();
+
+				value = new UnityMember(component, member.Name, parameters.Select(p => p.ParameterType).ToArray());
+
+				string parameterString = string.Join(", ", parameters.Select(p => p.ParameterType.PrettyName()).ToArray());
+
+				label = string.Format("{0} {1} ({2})", method.ReturnType.PrettyName(), member.Name, parameterString);
+			}
+			else
+			{
+				throw new UnityReflectionException();
+			}
+
+			if (inherited)
+			{
+				label = "Inherited/" + label;
+			}
+
+			return new DropdownOption<UnityMember>(value, label);
+		}
 
 		#endregion
 
 		#region Filtering
-
-		/// <summary>
-		/// The label of a member, displayed in options.
-		/// </summary>
-		protected virtual string memberLabel
-		{
-			get
-			{
-				return "Member";
-			}
-		}
-
-		/// <summary>
-		/// The default applied filter attribute if none is specified.
-		/// </summary>
-		protected virtual FilterAttribute DefaultFilter()
-		{
-			return new FilterAttribute();
-		}
 
 		/// <summary>
 		/// The valid BindingFlags when looking for reflected members.
@@ -446,7 +493,7 @@ namespace Ludiq.Reflection.Editor
 			{
 				// Build the flags from the filter attribute
 
-				BindingFlags flags = (BindingFlags)0;
+				BindingFlags flags = 0;
 
 				if (filter.Public) flags |= BindingFlags.Public;
 				if (filter.NonPublic) flags |= BindingFlags.NonPublic;
@@ -466,7 +513,24 @@ namespace Ludiq.Reflection.Editor
 		{
 			get
 			{
-				return MemberTypes.All;
+				MemberTypes types = 0;
+
+				if (filter.Fields || filter.Gettable || filter.Settable)
+				{
+					types |= MemberTypes.Field;
+				}
+
+				if (filter.Properties || filter.Gettable || filter.Settable)
+				{
+					types |= MemberTypes.Property;
+				}
+
+				if (filter.Methods || filter.Gettable)
+				{
+					types |= MemberTypes.Method;
+				}
+
+				return types;
 			}
 		}
 
@@ -476,7 +540,53 @@ namespace Ludiq.Reflection.Editor
 		/// </summary>
 		protected virtual bool ValidateMember(MemberInfo member)
 		{
-			return true;
+			bool valid = true;
+
+			FieldInfo field = member as FieldInfo;
+			PropertyInfo property = member as PropertyInfo;
+			MethodInfo method = member as MethodInfo;
+
+			if (field != null) // Member is a field
+			{
+				// Validate type based on field type
+				valid &= ValidateMemberType(field.FieldType);
+
+				// Exclude constants (literal) and readonly (init) fields if
+				// the filter rejects read-only fields.
+				if (!filter.ReadOnly) valid &= !field.IsLiteral || !field.IsInitOnly;
+			}
+			else if (property != null) // Member is a property
+			{
+				// Validate type based on property type
+				valid &= ValidateMemberType(property.PropertyType);
+
+				// Exclude read-only and write-only properties
+				if (!filter.ReadOnly || (!filter.Properties && filter.Settable)) valid &= property.CanWrite;
+				if (!filter.WriteOnly || (!filter.Properties && filter.Gettable)) valid &= property.CanRead;
+			}
+			else if (method != null) // Member is a method
+			{
+				// Exclude methods without a return type
+				if (!filter.Methods && filter.Gettable) valid &= method.ReturnType != typeof(void);
+
+				// Validate type based on return type
+				valid &= ValidateMemberType(method.ReturnType);
+
+				// Exclude special compiler methods
+				valid &= !method.IsSpecialName;
+
+				// Exclude generic methods
+				// TODO: Generic type (de)serialization
+				valid &= !method.ContainsGenericParameters;
+
+				// Exclude methods with parameters
+				if (!filter.Parameters)
+				{
+					valid &= method.GetParameters().Length == 0;
+				}
+			}
+
+			return valid;
 		}
 
 		/// <summary>

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using UnityObject = UnityEngine.Object;
 
 namespace Ludiq.Reflection.Internal
@@ -71,24 +70,11 @@ namespace Ludiq.Reflection.Internal
 			UnityReflectionException exception;
 
 			if (!TryReflectMethod(out methodInfo, out exception, reflectionTarget, name, parameterTypes))
-            {
+			{
 				throw exception;
 			}
 
 			return methodInfo;
-		}
-
-		internal static object InvokeMethod(UnityObject reflectionTarget, MethodInfo methodInfo, bool isExtension, params object[] parameters)
-		{
-			if (isExtension)
-			{
-				var fullParameters = new object[parameters.Length + 1];
-				fullParameters[0] = reflectionTarget;
-				Array.Copy(parameters, 0, fullParameters, 1, parameters.Length);
-				parameters = fullParameters;
-			}
-
-			return methodInfo.Invoke(reflectionTarget, parameters);
 		}
 
 		internal static bool TryReflectVariable(out MemberInfo variableInfo, out UnityReflectionException exception, UnityObject reflectionTarget, string name)

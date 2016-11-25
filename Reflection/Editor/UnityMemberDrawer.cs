@@ -23,6 +23,11 @@ namespace Ludiq.Reflection.Editor
 		protected FilterAttribute filter;
 
 		/// <summary>
+		/// Whether to display the label type after the name.
+		/// </summary>
+		private bool labelTypeAfter = false;
+
+		/// <summary>
 		/// The inspected property, of type UnityMember.
 		/// </summary>
 		protected SerializedProperty property;
@@ -68,6 +73,9 @@ namespace Ludiq.Reflection.Editor
 
 			// Fetch the filter
 			filter = filterOverride ?? (FilterAttribute)fieldInfo.GetCustomAttributes(typeof(FilterAttribute), true).FirstOrDefault() ?? new FilterAttribute();
+
+			// Check for the label type after attribute
+			labelTypeAfter = fieldInfo.IsDefined(typeof(LabelTypeAfterAttribute), true);
 
 			// Find the targets
 			targets = FindTargets();
@@ -210,21 +218,11 @@ namespace Ludiq.Reflection.Editor
 				}
 			}
 
-			// Sort the options
-			// TODO: Alphabetical somehow
-
-			var withoutSlashes = options.Where(o => !o.label.Contains("/")).ToList();
-			var withSlashes = options.Where(o => o.label.Contains("/")).ToList();
-
-			options.Clear();
-			options.AddRange(withSlashes);
-			options.AddRange(withoutSlashes);
-
 			return options;
 		}
 
 		#region Value
-		
+
 		/// <summary>
 		/// Returns a member constructed from the current parameter values.
 		/// </summary>
@@ -433,6 +431,23 @@ namespace Ludiq.Reflection.Editor
 				options.AddRange(extensionMethods);
 			}
 
+			// Sort the options
+
+			options.Sort((a, b) =>
+			{
+				var aSub = a.label.Contains("/");
+				var bSub = b.label.Contains("/");
+
+				if (aSub != bSub)
+				{
+					return bSub.CompareTo(aSub);
+				}
+				else
+				{
+					return a.value.name.CompareTo(b.value.name);
+				}
+			});
+
 			return options;
 		}
 
@@ -446,14 +461,14 @@ namespace Ludiq.Reflection.Editor
 				FieldInfo field = (FieldInfo)member;
 
 				value = new UnityMember(component, field.Name);
-				label = string.Format("{0} {1}", field.FieldType.PrettyName(), field.Name);
+				label = string.Format(labelTypeAfter ? "{1} : {0}" : "{0} {1}", field.FieldType.PrettyName(), field.Name);
 			}
 			else if (member is PropertyInfo)
 			{
 				PropertyInfo property = (PropertyInfo)member;
 
 				value = new UnityMember(component, property.Name);
-				label = string.Format("{0} {1}", property.PropertyType.PrettyName(), property.Name);
+				label = string.Format(labelTypeAfter ? "{1} : {0}" : "{0} {1}", property.PropertyType.PrettyName(), property.Name);
 			}
 			else if (member is MethodInfo)
 			{
@@ -465,7 +480,7 @@ namespace Ludiq.Reflection.Editor
 
 				string parameterString = string.Join(", ", parameters.Select(p => p.ParameterType.PrettyName()).ToArray());
 
-				label = string.Format("{0} {1} ({2})", method.ReturnType.PrettyName(), member.Name, parameterString);
+				label = string.Format(labelTypeAfter ? "{1} ({2}) : {0}" : "{0} {1} ({2})", method.ReturnType.PrettyName(), member.Name, parameterString);
 			}
 			else
 			{
@@ -474,7 +489,7 @@ namespace Ludiq.Reflection.Editor
 
 			if (inherited)
 			{
-				label = "Inherited/" + label;
+				label = "(Inherited)/" + label;
 			}
 
 			return new DropdownOption<UnityMember>(value, label);

@@ -248,7 +248,6 @@ Parameters	|Display methods with parameters|true
 TypeFamily	|Determines which member type families are displayed|TypeFamily.All
 Types		|Determines which member types are displayed|*(Any)*
 
-
 The `TypeFamily` enumeration is a [bitwise flag set](http://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) with the following options:
 
 Flag		|Description
@@ -273,6 +272,21 @@ TypeFamily enumsOrInterfaces = TypeFamily.Enum | TypeFamily.Interface;
 #### Changing Defaults
 
 You can change the filter defaults by editing the the `FilterAttribute` constructor in `Reflection/FilterAttribute.cs`.
+
+#### Type Labeling Format
+
+You can tell the inspector to label the member options as `{Name} : {Type}` instead of `{Type} {Name}` by adding the `[LabelTypeAfter]` attribute. For example:
+
+```csharp
+using UnityEngine;
+using Ludiq.Reflection;
+
+public class AdvancedExample : MonoBehaviour
+{
+	[Filter(Methods = true), LabelTypeAfter]
+	public UnityMember method;
+}
+```
 
 #### Creating from script
 

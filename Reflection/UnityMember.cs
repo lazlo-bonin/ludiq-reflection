@@ -12,7 +12,7 @@ namespace Ludiq.Reflection
 	[Serializable]
 	public class UnityMember : ISerializationCallbackReceiver
 	{
-		private enum SourceType
+		public enum SourceType
 		{
 			Unknown,
 			Field,
@@ -20,7 +20,7 @@ namespace Ludiq.Reflection
 			Method
 		}
 
-		private SourceType sourceType = SourceType.Unknown;
+		public SourceType sourceType { get; private set; }
 
 		/// <summary>
 		/// The underlying reflected field, or null if the getter is a property or method.

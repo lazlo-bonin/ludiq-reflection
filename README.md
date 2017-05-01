@@ -1,3 +1,7 @@
+## Currently unmaintained
+
+This repository is no longer maintained. I am working on a much more robust Unity reflection framework which will entirely replace it.
+
 # Ludiq.Reflection
 
 A set of Unity classes and their inspector drawers that provide easy reflection and decoupling.

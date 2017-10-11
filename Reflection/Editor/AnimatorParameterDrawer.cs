@@ -155,7 +155,30 @@ namespace Ludiq.Reflection.Editor
 			var options = new List<DropdownOption<AnimatorParameter>>();
 
 			List<string> names = targets
-				.Select(animator => ((AnimatorController)animator.runtimeAnimatorController))
+				.Select(animator => {
+
+					AnimatorController controller = null;
+
+					// Support for AnimatorOverrideController
+					try {
+						controller = (AnimatorController)animator.runtimeAnimatorController;
+
+					} catch(System.InvalidCastException) {
+						// If can't cast as AnimatorController, probably an AnimatorOverrideController
+						try {
+							AnimatorOverrideController overrideController;
+							overrideController = (AnimatorOverrideController)animator.runtimeAnimatorController;
+
+							controller = (AnimatorController)overrideController.runtimeAnimatorController;
+
+						} catch(System.InvalidCastException) {
+							// Neither worked, so skip it
+							controller = null;
+						}
+					}
+
+					return controller;
+				})
 				.Where(animatorController => animatorController != null)
 				.Select(animatorController => animatorController.parameters)
 				.Select(parameters => parameters.Select(parameter => parameter.name))
